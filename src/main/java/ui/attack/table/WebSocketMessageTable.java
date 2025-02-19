@@ -9,7 +9,10 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.function.Consumer;
 
 import static java.awt.EventQueue.invokeLater;
@@ -18,15 +21,13 @@ import static javax.swing.SwingConstants.LEFT;
 import static utils.IconType.LEFT_ARROW;
 import static utils.IconType.RIGHT_ARROW;
 
-public class WebSocketMessageTable extends JPanel
-{
+public class WebSocketMessageTable extends JPanel {
     public WebSocketMessageTable(
             UserInterface userInterface,
             WebSocketMessageTableModel webSocketMessageTableModel,
             IconFactory iconFactory,
             Consumer<ConnectionMessage> messageConsumer
-    )
-    {
+    ) {
         super(new BorderLayout());
 
         JTable webSocketMessageTable = new PercentageBasedColumnWidthTable(AttackTableColumns.columnWidthPercentages());
@@ -45,15 +46,13 @@ public class WebSocketMessageTable extends JPanel
         ListSelectionModel selectionModel = webSocketMessageTable.getSelectionModel();
         selectionModel.addListSelectionListener(e ->
         {
-            if (e.getValueIsAdjusting())
-            {
+            if (e.getValueIsAdjusting()) {
                 return;
             }
 
             ConnectionMessage webSocketConnectionMessage = webSocketMessageTableModel.get(selectionModel.getMaxSelectionIndex());
 
-            if (webSocketConnectionMessage != null)
-            {
+            if (webSocketConnectionMessage != null) {
                 messageConsumer.accept(webSocketConnectionMessage);
             }
         });
@@ -70,30 +69,24 @@ public class WebSocketMessageTable extends JPanel
         this.add(scrollPane, BorderLayout.CENTER);
     }
 
-    private static class DirectionCellRenderer extends DefaultTableCellRenderer
-    {
+    private static class DirectionCellRenderer extends DefaultTableCellRenderer {
         private final IconFactory iconFactory;
 
-        public DirectionCellRenderer(IconFactory iconFactory)
-        {
+        public DirectionCellRenderer(IconFactory iconFactory) {
             this.iconFactory = iconFactory;
         }
 
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
-        {
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-            if (component instanceof JLabel label && value instanceof Direction direction)
-            {
-                String text = switch (direction)
-                {
+            if (component instanceof JLabel label && value instanceof Direction direction) {
+                String text = switch (direction) {
                     case SERVER_TO_CLIENT -> "To client";
                     case CLIENT_TO_SERVER -> "To server";
                 };
 
-                Icon icon = switch (direction)
-                {
+                Icon icon = switch (direction) {
                     case SERVER_TO_CLIENT -> iconFactory.scaledIconFor(LEFT_ARROW, label.getFont().getSize());
                     case CLIENT_TO_SERVER -> iconFactory.scaledIconFor(RIGHT_ARROW, label.getFont().getSize());
                 };
@@ -108,15 +101,12 @@ public class WebSocketMessageTable extends JPanel
         }
     }
 
-    private static class LeftAlignedCellRender extends DefaultTableCellRenderer
-    {
+    private static class LeftAlignedCellRender extends DefaultTableCellRenderer {
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
-        {
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-            if (component instanceof JLabel label)
-            {
+            if (component instanceof JLabel label) {
                 label.setHorizontalAlignment(LEFT);
             }
 
@@ -124,22 +114,18 @@ public class WebSocketMessageTable extends JPanel
         }
     }
 
-    private static class LeftAlignedTableHeaderDecorator implements TableCellRenderer
-    {
+    private static class LeftAlignedTableHeaderDecorator implements TableCellRenderer {
         private final TableCellRenderer tableCellRenderer;
 
-        public LeftAlignedTableHeaderDecorator(TableCellRenderer tableCellRenderer)
-        {
+        public LeftAlignedTableHeaderDecorator(TableCellRenderer tableCellRenderer) {
             this.tableCellRenderer = tableCellRenderer;
         }
 
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
-        {
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             Component component = tableCellRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-            if (component instanceof JLabel label)
-            {
+            if (component instanceof JLabel label) {
                 label.setHorizontalAlignment(LEFT);
             }
 

@@ -7,8 +7,8 @@ def queue_websockets(upgrade_request, message):
         connection1.queue(message)
         time.sleep(2)
 
-def handle_outgoing_message(websocket_message):
+def handle_outgoing_message(websocket_message, interesting):
     results_table.add(websocket_message)
 
-def handle_incoming_message(websocket_message):
+def handle_incoming_message(websocket_message, interesting):
     results_table.add(websocket_message)

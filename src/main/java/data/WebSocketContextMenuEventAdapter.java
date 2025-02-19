@@ -12,27 +12,15 @@ import java.util.function.Function;
 
 import static utils.Utilities.insertPlaceholder;
 
-public class WebSocketContextMenuEventAdapter implements Function<WebSocketContextMenuEvent, List<InitialWebSocketMessage>>
-{
-    @Override
-    public List<InitialWebSocketMessage> apply(WebSocketContextMenuEvent event)
-    {
-        return event.messageEditorWebSocket().isPresent()
-                ? convertSingleMessage(event.messageEditorWebSocket().get())
-                : event.selectedWebSocketMessages().stream().map(InitialWebSocketMessage::from).toList();
-    }
-
-    private static List<InitialWebSocketMessage> convertSingleMessage(WebSocketEditorEvent webSocketEditorEvent)
-    {
+public class WebSocketContextMenuEventAdapter implements Function<WebSocketContextMenuEvent, List<InitialWebSocketMessage>> {
+    private static List<InitialWebSocketMessage> convertSingleMessage(WebSocketEditorEvent webSocketEditorEvent) {
         return List.of(convertEventToMessage(webSocketEditorEvent));
     }
 
-    private static InitialWebSocketMessage convertEventToMessage(WebSocketEditorEvent webSocketEditorEvent)
-    {
+    private static InitialWebSocketMessage convertEventToMessage(WebSocketEditorEvent webSocketEditorEvent) {
         Optional<Range> range = extractRangeFromEvent(webSocketEditorEvent);
 
-        if (range.isEmpty())
-        {
+        if (range.isEmpty()) {
             return InitialWebSocketMessage.from(webSocketEditorEvent.webSocketMessage());
         }
 
@@ -43,16 +31,21 @@ public class WebSocketContextMenuEventAdapter implements Function<WebSocketConte
         return new InitialWebSocketMessage(webSocketMessage.upgradeRequest(), finalPayload);
     }
 
-    private static Optional<Range> extractRangeFromEvent(WebSocketEditorEvent webSocketEditorEvent)
-    {
+    private static Optional<Range> extractRangeFromEvent(WebSocketEditorEvent webSocketEditorEvent) {
         Optional<Range> rangeOptional = webSocketEditorEvent.selectionOffsets();
 
-        if (rangeOptional.isEmpty())
-        {
+        if (rangeOptional.isEmpty()) {
             return Optional.empty();
         }
 
         Range range = rangeOptional.get();
         return range.startIndexInclusive() == range.endIndexExclusive() ? Optional.empty() : Optional.of(range);
+    }
+
+    @Override
+    public List<InitialWebSocketMessage> apply(WebSocketContextMenuEvent event) {
+        return event.messageEditorWebSocket().isPresent()
+                ? convertSingleMessage(event.messageEditorWebSocket().get())
+                : event.selectedWebSocketMessages().stream().map(InitialWebSocketMessage::from).toList();
     }
 }

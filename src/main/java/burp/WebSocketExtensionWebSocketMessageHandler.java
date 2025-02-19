@@ -8,10 +8,11 @@ import data.AttackIdAndWebSocketConnectionMessage;
 import data.WebSocketConnectionMessage;
 import logger.Logger;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class WebSocketExtensionWebSocketMessageHandler implements ExtensionWebSocketMessageHandler
-{
+public class WebSocketExtensionWebSocketMessageHandler implements ExtensionWebSocketMessageHandler {
+    public final AtomicInteger inCounter = new AtomicInteger(0);
     private final Logger logger;
     private final Consumer<AttackIdAndWebSocketConnectionMessage> pendingMessagesConsumer;
     private final int attackId;
@@ -31,12 +32,12 @@ public class WebSocketExtensionWebSocketMessageHandler implements ExtensionWebSo
     }
 
     @Override
-    public void textMessageReceived(TextMessage textMessage)
-    {
+    public void textMessageReceived(TextMessage textMessage) {
         pendingMessagesConsumer.accept(
                 new AttackIdAndWebSocketConnectionMessage(
                         attackId,
                         new WebSocketConnectionMessage(
+                                inCounter.getAndIncrement(),
                                 textMessage.payload(),
                                 textMessage.direction(),
                                 connection
@@ -46,8 +47,7 @@ public class WebSocketExtensionWebSocketMessageHandler implements ExtensionWebSo
     }
 
     @Override
-    public void binaryMessageReceived(BinaryMessage binaryMessage)
-    {
+    public void binaryMessageReceived(BinaryMessage binaryMessage) {
         logger.logError("Unhandled binary message received");
     }
 }

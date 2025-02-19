@@ -6,8 +6,7 @@ import data.ConnectionMessage;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class TableBlockingQueueConsumer implements Runnable
-{
+public class TableBlockingQueueConsumer implements Runnable {
     private final Supplier<ConnectionMessage> queue;
     private final Consumer<ConnectionMessage> messageConsumer;
     private final AttackStatus attackStatus;
@@ -16,22 +15,18 @@ public class TableBlockingQueueConsumer implements Runnable
             Supplier<ConnectionMessage> queue,
             AttackStatus attackStatus,
             Consumer<ConnectionMessage> messageConsumer
-    )
-    {
+    ) {
         this.queue = queue;
         this.messageConsumer = messageConsumer;
         this.attackStatus = attackStatus;
     }
 
     @Override
-    public void run()
-    {
-        while (attackStatus.isRunning())
-        {
+    public void run() {
+        while (attackStatus.isRunning()) {
             ConnectionMessage connectionMessage = queue.get();
 
-            if (connectionMessage != null)
-            { // TODO - push down
+            if (connectionMessage != null) { // TODO - push down
                 messageConsumer.accept(connectionMessage);
             }
         }

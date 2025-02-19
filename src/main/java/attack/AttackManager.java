@@ -1,5 +1,7 @@
 package attack;
 
+import burp.api.montoya.collaborator.CollaboratorClient;
+import burp.api.montoya.collaborator.Interaction;
 import data.AttackDetails;
 import data.ConnectionMessage;
 import data.MessagesToDisplay;
@@ -7,16 +9,19 @@ import data.PendingMessages;
 import logger.Logger;
 import queue.SendMessageQueueConsumer;
 import queue.TableBlockingQueueConsumer;
+import turbo.TurboThreadExecutor;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
+import static java.time.LocalTime.now;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static logger.LoggerLevel.DEBUG;
+import static logger.LoggerLevel.UI;
 
-public class AttackManager implements AttackStarter, AttackStopper
-{
+public class AttackManager implements AttackStarter, AttackStopper {
+    private long startTime;
     private final Logger logger;
     private final PendingMessages pendingMessages;
     private final MessagesToDisplay messagesToDisplay;
@@ -24,8 +29,8 @@ public class AttackManager implements AttackStarter, AttackStopper
     private final AttackScriptExecutor scriptExecutor;
     private final AttackState attackState;
 
-    private ExecutorService sendMessageExecutorService;
-    private ExecutorService tableExecutorService;
+    private TurboThreadExecutor sendMessageExecutorService;
+    private TurboThreadExecutor tableExecutorService;
 
     public AttackManager(
             Logger logger,
@@ -34,8 +39,7 @@ public class AttackManager implements AttackStarter, AttackStopper
             Consumer<ConnectionMessage> messageConsumer,
             AttackScriptExecutor scriptExecutor,
             AttackState attackState
-    )
-    {
+    ) {
         this.logger = logger;
         this.pendingMessages = pendingMessages;
         this.messagesToDisplay = messagesToDisplay;
@@ -45,49 +49,55 @@ public class AttackManager implements AttackStarter, AttackStopper
     }
 
     @Override
-    public void startAttack(AttackDetails attackDetails)
-    {
+    public void startAttack(AttackDetails attackDetails) {
         attackState.newAttack();
 
-        sendMessageExecutorService = newFixedThreadPool(attackDetails.numberOfThreads());
-        sendMessageExecutorService.execute(
+//        sendMessageExecutorService = newFixedThreadPool(attackDetails.numberOfThreads());
+        sendMessageExecutorService = new TurboThreadExecutor(logger, attackDetails.numberOfThreads());
+        sendMessageExecutorService.submitTask(
                 new SendMessageQueueConsumer(
                         scriptExecutor::processMessage,
                         attackState,
                         pendingMessages
                 )
         );
+        startTime = System.currentTimeMillis();
+        String message = String.format("Number of threads attack started with: %d, Time: %d", attackDetails.numberOfThreads(), startTime);
+        logger.logOutput(UI, new String(new char[message.length()]).replace("\0", "—"));
+        logger.logOutput(UI, message);
 
-        logger.logOutput(DEBUG, "Number of threads attack started with: " + attackDetails.numberOfThreads());
-
-        tableExecutorService = Executors.newSingleThreadExecutor();
-        tableExecutorService.execute(
+        tableExecutorService = new TurboThreadExecutor(logger);
+        tableExecutorService.submitTask(
                 new TableBlockingQueueConsumer(
                         messagesToDisplay,
                         attackState,
                         connectionMessageConsumer
                 )
         );
-
         logger.logOutput(DEBUG, "Table thread started.");
 
         scriptExecutor.startAttack(attackDetails.payload(), attackDetails.upgradeRequest(), attackDetails.script());
     }
 
     @Override
-    public void stopAttack()
-    {
+    public void stopAttack() {
         attackState.endAttack();
 
         scriptExecutor.stopAttack();
 
-        sendMessageExecutorService.shutdownNow();
-        logger.logOutput(DEBUG, "sendMessageExecutorService shutdown? " + sendMessageExecutorService.isShutdown());
+        sendMessageExecutorService.shutdown();
 
-        tableExecutorService.shutdownNow();
-        logger.logOutput(DEBUG, "tableExecutorService shutdown? " + tableExecutorService.isShutdown());
+        tableExecutorService.shutdown();
 
         pendingMessages.clear();
         messagesToDisplay.clear();
+    }
+
+    public void registerListener(Consumer<String> listener) {
+        this.logger.registerListener(listener);
+    }
+
+    public void registerProgressListener(Consumer<String> listener) {
+        this.pendingMessages.registerListener(listener);
     }
 }

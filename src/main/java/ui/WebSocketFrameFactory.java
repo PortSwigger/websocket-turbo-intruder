@@ -3,6 +3,7 @@ package ui;
 import attack.AttackManager;
 import attack.AttackScriptExecutor;
 import attack.AttackState;
+import burp.api.montoya.collaborator.CollaboratorClient;
 import burp.api.montoya.ui.UserInterface;
 import burp.api.montoya.websocket.WebSockets;
 import config.FileLocationConfiguration;
@@ -11,33 +12,34 @@ import data.MessagesToDisplay;
 import data.PendingMessages;
 import logger.Logger;
 import python.ConnectionFactoryFactory;
+import socket.TurboWebSocketMessagePublisher;
 import ui.attack.table.WebSocketMessageTableModel;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-public class WebSocketFrameFactory
-{
+public class WebSocketFrameFactory {
     private final Logger logger;
     private final UserInterface userInterface;
     private final FileLocationConfiguration fileLocationConfiguration;
     private final WebSockets webSockets;
+    private final TurboWebSocketMessagePublisher publisher;
 
     public WebSocketFrameFactory(
             Logger logger,
             UserInterface userInterface,
             FileLocationConfiguration fileLocationConfiguration,
-            WebSockets webSockets
-    )
-    {
+            WebSockets webSockets,
+            TurboWebSocketMessagePublisher publisher
+    ) {
         this.logger = logger;
         this.userInterface = userInterface;
         this.fileLocationConfiguration = fileLocationConfiguration;
         this.webSockets = webSockets;
+        this.publisher = publisher;
     }
 
-    public WebSocketFrame from(InitialWebSocketMessage webSocketMessage)
-    {
+    public WebSocketFrame from(InitialWebSocketMessage webSocketMessage) {
         AttackState attackState = new AttackState();
 
         MessagesToDisplay messagesToDisplay = new MessagesToDisplay(logger, attackState);
@@ -45,12 +47,14 @@ public class WebSocketFrameFactory
 
         AttackScriptExecutor scriptExecutor = new AttackScriptExecutor(
                 logger,
+                publisher,
                 messagesToDisplay,
                 new ConnectionFactoryFactory(
                         logger,
                         webSockets,
                         pendingMessages,
-                        attackState::currentAttackId
+                        attackState::currentAttackId,
+                        publisher
                 )
         );
 
@@ -76,11 +80,9 @@ public class WebSocketFrameFactory
         );
 
         webSocketFrame.addWindowListener(
-                new WindowAdapter()
-                {
+                new WindowAdapter() {
                     @Override
-                    public void windowClosed(WindowEvent e)
-                    {
+                    public void windowClosed(WindowEvent e) {
                         attackManager.stopAttack();
                     }
                 }

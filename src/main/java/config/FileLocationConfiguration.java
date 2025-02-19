@@ -6,46 +6,49 @@ import logger.LoggerLevel;
 
 import java.util.Objects;
 
-public class FileLocationConfiguration
-{
+public class FileLocationConfiguration {
     private static final String DEFAULT_SCRIPT_DIRECTORY = "/examples/";
+    private static final String PREFERENCE_KEY_WEBSOCKET_SCRIPT = "websocketsScript";
+    private static final String PREFERENCE_KEY_WEBSOCKET_SCRIPTS_PATH = "websocketsScriptsPath";
     private final Logger logger;
     private final Preferences preferences;
 
-    public FileLocationConfiguration(Logger logger, Preferences preferences)
-    {
+    public FileLocationConfiguration(Logger logger, Preferences preferences) {
         this.logger = logger;
         this.preferences = preferences;
 
-        if (getWebSocketScriptPath() == null)
-        {
+        if (getWebSocketScriptPath() == null) {
             setWebSocketScriptPath();
         }
     }
 
-    public String defaultDirectory()
-    {
+    public String defaultDirectory() {
         return DEFAULT_SCRIPT_DIRECTORY;
     }
 
-    public String getWebSocketScriptPath()
-    {
-        return preferences.getString("websocketsScriptsPath");
+    public String getWebSocketScriptPath() {
+        return preferences.getString(PREFERENCE_KEY_WEBSOCKET_SCRIPTS_PATH);
     }
 
-    public void setWebSocketScriptPath()
-    {
-        setWebSocketScriptPath(DEFAULT_SCRIPT_DIRECTORY);
-    }
-
-    public void setWebSocketScriptPath(String scriptPath)
-    {
-        preferences.setString("websocketsScriptsPath", scriptPath);
+    public void setWebSocketScriptPath(String scriptPath) {
+        preferences.setString(PREFERENCE_KEY_WEBSOCKET_SCRIPTS_PATH, scriptPath);
         logger.logOutput(LoggerLevel.DEBUG, "Scripts directory set to " + scriptPath);
     }
 
-    public boolean isDefault()
-    {
+    public String getWebSocketScript() {
+        return preferences.getString(PREFERENCE_KEY_WEBSOCKET_SCRIPT);
+    }
+
+    public void setWebSocketScript(String script) {
+        preferences.setString(PREFERENCE_KEY_WEBSOCKET_SCRIPT, script);
+        logger.logOutput(LoggerLevel.DEBUG, "Script saved to the preferences.");
+    }
+
+    public void setWebSocketScriptPath() {
+        setWebSocketScriptPath(DEFAULT_SCRIPT_DIRECTORY);
+    }
+
+    public boolean isDefault() {
         return Objects.equals(getWebSocketScriptPath(), DEFAULT_SCRIPT_DIRECTORY);
     }
 }

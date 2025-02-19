@@ -16,11 +16,15 @@ java {
 }
 
 dependencies {
-    compileOnly "net.portswigger.burp.extensions:montoya-api:${extender_version}"
+//    compileOnly "net.portswigger.burp.extensions:montoya-api:${extender_version}"
 
     implementation (
+            "net.portswigger.burp.extensions:montoya-api:${extender_version}",
             'org.python:jython-standalone:2.7.3',
-            'com.fifesoft:rsyntaxtextarea:3.3.4'
+            'com.fifesoft:rsyntaxtextarea:3.3.4',
+            'com.fifesoft:autocomplete:3.3.1',
+            'org.json:json:20241224'
+
     )
 
     testImplementation(
@@ -37,7 +41,10 @@ test {
 
 jar {
     manifest {
-        attributes 'implementation-version': "${version}"
+        attributes (
+                'Main-Class': 'standalone.StandaloneWebSocketFuzzer',
+                'implementation-version': "${version}",
+        )
     }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }

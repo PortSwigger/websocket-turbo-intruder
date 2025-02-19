@@ -24,12 +24,15 @@ import java.time.LocalDateTime;
 
 import static java.util.Arrays.stream;
 
-enum AttackTableColumns {
+public enum AttackTableColumns {
     MESSAGE_ID("ID", 10, Integer.class),
+    REAL_ID("#", 10, Integer.class),
     DIRECTION("Direction", 20, Direction.class),
     LENGTH("Length", 10, Integer.class),
-    TIME("Time", 30, LocalDateTime.class),
+    TIME("Time", 10, LocalDateTime.class),
+    DURATION("Duration", 10, Long.class),
     COMMENT("Comment", 30, String.class);
+
 
     private final String header;
     private final int widthPercentage;

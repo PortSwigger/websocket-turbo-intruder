@@ -29,8 +29,7 @@ import static javax.swing.JOptionPane.showMessageDialog;
 import static javax.swing.JSplitPane.HORIZONTAL_SPLIT;
 import static javax.swing.JSplitPane.VERTICAL_SPLIT;
 
-public class WebSocketEditorPanel extends JPanel
-{
+public class WebSocketEditorPanel extends JPanel {
     private final UserInterface userInterface;
     private final InitialWebSocketMessage originalWebSocketMessage;
     private final ThemeAwareRSTAFactory rstaFactory;
@@ -48,8 +47,7 @@ public class WebSocketEditorPanel extends JPanel
             AttackStarter attackStarter,
             InitialWebSocketMessage originalWebSocketMessage,
             PanelSwitcher panelSwitcher
-    )
-    {
+    ) {
         super(new BorderLayout());
 
         this.userInterface = userInterface;
@@ -78,24 +76,21 @@ public class WebSocketEditorPanel extends JPanel
         this.add(splitPane, BorderLayout.CENTER);
     }
 
-    private Component getWebSocketMessageEditor()
-    {
+    private Component getWebSocketMessageEditor() {
         webSocketsMessageEditor = userInterface.createWebSocketMessageEditor();
         webSocketsMessageEditor.setContents(originalWebSocketMessage.message());
 
         return webSocketsMessageEditor.uiComponent();
     }
 
-    private Component getUpgradeHttpMessageEditor()
-    {
+    private Component getUpgradeHttpMessageEditor() {
         upgradeHttpMessageEditor = userInterface.createHttpRequestEditor();
         upgradeHttpMessageEditor.setRequest(originalWebSocketMessage.upgradeRequest());
 
         return upgradeHttpMessageEditor.uiComponent();
     }
 
-    private Component getPythonCodeEditor()
-    {
+    private Component getPythonCodeEditor() {
         JPanel panel = new JPanel(new BorderLayout());
 
         panel.add(getButtonPanel(), BorderLayout.NORTH);
@@ -126,8 +121,7 @@ public class WebSocketEditorPanel extends JPanel
         return panel;
     }
 
-    private Component getButtonPanel()
-    {
+    private Component getButtonPanel() {
         JPanel buttonPanel = new JPanel();
 
         scriptComboBox = new JComboBox<>(controller.loadScripts());
@@ -146,8 +140,7 @@ public class WebSocketEditorPanel extends JPanel
         return buttonPanel;
     }
 
-    private JButton getScriptsDirectoryButton()
-    {
+    private JButton getScriptsDirectoryButton() {
         JButton selectScriptsDirectoryButton = new JButton("Choose scripts directory");
         selectScriptsDirectoryButton.addActionListener(l ->
         {
@@ -156,8 +149,7 @@ public class WebSocketEditorPanel extends JPanel
 
             int option = scriptsFileChooser.showOpenDialog(this);
 
-            if (option == APPROVE_OPTION)
-            {
+            if (option == APPROVE_OPTION) {
                 File file = scriptsFileChooser.getSelectedFile();
                 Script[] scripts = controller.loadScripts(file);
 
@@ -168,8 +160,7 @@ public class WebSocketEditorPanel extends JPanel
         return selectScriptsDirectoryButton;
     }
 
-    private JButton getAttackButton(JTextComponent scriptTextComponent)
-    {
+    private JButton getAttackButton(JTextComponent scriptTextComponent) {
         JButton attackButton = new JButton("Attack");
         attackButton.addActionListener(l ->
         {
@@ -180,11 +171,10 @@ public class WebSocketEditorPanel extends JPanel
                     scriptTextComponent.getText()
             );
 
-            try
-            {
+            try {
                 controller.startAttack(attackDetails);
-            } catch (Exception e)
-            {
+                controller.saveScript(scriptTextComponent.getText());
+            } catch (Exception e) {
                 showMessageDialog(
                         this,
                         "Jython code error. Please review.\n" + e.getMessage(),

@@ -1,0 +1,12 @@
+GET /echo HTTP/1.1
+Host: 127.0.0.1:3000
+Accept-Encoding: gzip, deflate, br
+Accept: */*
+Accept-Language: en-US;q=0.9,en;q=0.8
+Connection: Upgrade
+Cache-Control: max-age=0
+Origin: http://127.0.0.1:3000/echo
+Upgrade: websocket
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+Sec-WebSocket-Version: 13
+

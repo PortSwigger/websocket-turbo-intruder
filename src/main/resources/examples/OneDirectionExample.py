@@ -4,8 +4,8 @@ def queue_websockets(upgrade_request, message):
     for i in range(10):
         connection1.queue(message)
 
-def handle_outgoing_message(websocket_message):
+def handle_outgoing_message(websocket_message, interesting):
     return
 
-def handle_incoming_message(websocket_message):
+def handle_incoming_message(websocket_message, interesting):
     results_table.add(websocket_message)
