@@ -6,6 +6,7 @@ import burp.api.montoya.http.message.Cookie;
 import burp.api.montoya.http.message.HttpHeader;
 import burp.api.montoya.http.message.MimeType;
 import burp.api.montoya.http.message.StatusCodeClass;
+import burp.api.montoya.http.message.responses.HttpResponse;
 import burp.api.montoya.http.message.responses.analysis.Attribute;
 import burp.api.montoya.http.message.responses.analysis.AttributeType;
 import burp.api.montoya.http.message.responses.analysis.KeywordCount;
@@ -15,6 +16,7 @@ import java.util.regex.Pattern;
 
 public class TurboHttpResponse implements burp.api.montoya.http.message.responses.HttpResponse {
     private final String response;
+
     public TurboHttpResponse(String response) {
         this.response = response;
     }
@@ -195,12 +197,32 @@ public class TurboHttpResponse implements burp.api.montoya.http.message.response
     }
 
     @Override
+    public HttpResponse withAddedHeaders(List<? extends HttpHeader> list) {
+        return null;
+    }
+
+    @Override
+    public HttpResponse withAddedHeaders(HttpHeader... httpHeaders) {
+        return null;
+    }
+
+    @Override
     public burp.api.montoya.http.message.responses.HttpResponse withUpdatedHeader(HttpHeader httpHeader) {
         return null;
     }
 
     @Override
     public burp.api.montoya.http.message.responses.HttpResponse withUpdatedHeader(String s, String s1) {
+        return null;
+    }
+
+    @Override
+    public HttpResponse withUpdatedHeaders(List<? extends HttpHeader> list) {
+        return null;
+    }
+
+    @Override
+    public HttpResponse withUpdatedHeaders(HttpHeader... httpHeaders) {
         return null;
     }
 
@@ -215,6 +237,16 @@ public class TurboHttpResponse implements burp.api.montoya.http.message.response
     }
 
     @Override
+    public HttpResponse withRemovedHeaders(List<? extends HttpHeader> list) {
+        return null;
+    }
+
+    @Override
+    public HttpResponse withRemovedHeaders(HttpHeader... httpHeaders) {
+        return null;
+    }
+
+    @Override
     public burp.api.montoya.http.message.responses.HttpResponse withMarkers(List<Marker> list) {
         return null;
     }
@@ -223,6 +255,7 @@ public class TurboHttpResponse implements burp.api.montoya.http.message.response
     public burp.api.montoya.http.message.responses.HttpResponse withMarkers(Marker... markers) {
         return null;
     }
+
     @Override
     public String toString() {
         return response;

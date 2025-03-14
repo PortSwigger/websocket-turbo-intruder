@@ -9,6 +9,7 @@ import data.AttackDetails;
 import data.InitialWebSocketMessage;
 import logger.Logger;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import script.Script;
 import script.ScriptLoaderFacade;
@@ -19,6 +20,8 @@ import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.io.File;
 
 import static java.awt.EventQueue.invokeLater;
@@ -34,13 +37,14 @@ public class WebSocketEditorPanel extends JPanel {
     private final InitialWebSocketMessage originalWebSocketMessage;
     private final ThemeAwareRSTAFactory rstaFactory;
     private final WebSocketEditorController controller;
-
+    private final AiManager aiManager;
     private JComboBox<Script> scriptComboBox;
     private WebSocketMessageEditor webSocketsMessageEditor;
     private HttpRequestEditor upgradeHttpMessageEditor;
     private JSpinner numberOfThreadsSpinner;
 
     public WebSocketEditorPanel(
+            AiManager aiManager,
             Logger logger,
             UserInterface userInterface,
             FileLocationConfiguration fileLocationConfiguration,
@@ -54,6 +58,7 @@ public class WebSocketEditorPanel extends JPanel {
         this.originalWebSocketMessage = originalWebSocketMessage;
         ScriptLoaderFacade scriptLoader = new ScriptLoaderFacade(fileLocationConfiguration);
         this.rstaFactory = new ThemeAwareRSTAFactory(userInterface, logger);
+        this.aiManager = aiManager;
 
         controller = new WebSocketEditorController(attackStarter, panelSwitcher, fileLocationConfiguration, scriptLoader);
 
@@ -116,7 +121,18 @@ public class WebSocketEditorPanel extends JPanel {
 
         JButton attackButton = getAttackButton(rSyntaxTextArea);
 
-        panel.add(attackButton, BorderLayout.SOUTH);
+        if (aiManager.isEnabled()) {
+            JSplitPane controlSplitPanel = new JSplitPane(
+                    VERTICAL_SPLIT,
+                    getBurpAIPanel(rSyntaxTextArea),
+                    attackButton
+            );
+            controlSplitPanel.setResizeWeight(1.0);
+            controlSplitPanel.setDividerSize(0);
+            panel.add(controlSplitPanel, BorderLayout.SOUTH);
+        } else {
+            panel.add(attackButton, BorderLayout.SOUTH);
+        }
 
         return panel;
     }
@@ -158,6 +174,63 @@ public class WebSocketEditorPanel extends JPanel {
         });
 
         return selectScriptsDirectoryButton;
+    }
+
+    private Component getBurpAIPanel(JTextComponent scriptTextComponent) {
+        JPanel burpAIPanel = new JPanel(new BorderLayout());
+
+        JLabel outputLabel = new JLabel("Burp AI:");
+        outputLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
+        outputLabel.setFont(outputLabel.getFont().deriveFont(Font.BOLD));
+
+        JLabel logLabel = new JLabel("helps you to create Turbo Intruder scripts");
+        logLabel.setHorizontalAlignment(SwingConstants.LEFT);
+
+
+        JButton sendButton = new JButton("Ask AI");
+
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        topPanel.add(outputLabel, BorderLayout.WEST);
+        topPanel.add(logLabel, BorderLayout.CENTER);
+        topPanel.add(sendButton, BorderLayout.EAST);
+
+        RSyntaxTextArea inputArea = rstaFactory.build();
+        inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+        inputArea.setRows(3);
+        inputArea.setColumns(50);
+        inputArea.setForeground(Color.GRAY);
+        String prompt = "Create a script that will ";
+        inputArea.setText(prompt);
+        inputArea.addFocusListener(new FocusListener() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (inputArea.getText().equals(prompt)) {
+                    inputArea.setText("");
+                    inputArea.setForeground(Color.BLACK);
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (inputArea.getText().trim().isEmpty()) {
+                    inputArea.setText(prompt);
+                    inputArea.setForeground(Color.GRAY);
+                }
+            }
+        });
+        RTextScrollPane scrollableCodeEditor = new RTextScrollPane(inputArea);
+//        JTextArea inputArea = new JTextArea(3, 50);
+//
+//        JScrollPane scrollableCodeEditor = new JScrollPane(inputArea);
+        burpAIPanel.add(topPanel, BorderLayout.NORTH);
+        burpAIPanel.add(scrollableCodeEditor, BorderLayout.CENTER);
+
+        sendButton.addActionListener(l -> {
+            aiManager.prompt(sendButton, inputArea, scriptTextComponent);
+        });
+
+        return burpAIPanel;
     }
 
     private JButton getAttackButton(JTextComponent scriptTextComponent) {

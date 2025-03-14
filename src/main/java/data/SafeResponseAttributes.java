@@ -104,6 +104,7 @@ public class SafeResponseAttributes {
     public Set<String> getStringAttribute(WebSocketAttributeType type) {
         return stringAttributes.get(type);
     }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;  // Same reference

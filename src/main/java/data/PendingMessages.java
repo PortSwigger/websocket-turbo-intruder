@@ -3,7 +3,7 @@ package data;
 import attack.AttackStatus;
 import burp.api.montoya.websocket.Direction;
 import logger.Logger;
-import java.util.Collections;
+
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,9 +19,9 @@ public class PendingMessages implements Consumer<AttackIdAndWebSocketConnectionM
     private final BlockingQueue<SafeResponseAttributes> baselineMessageQueue;
     private final Logger logger;
     private final AttackStatus attackStatus;
-    private Consumer<String> listener;
     private final AtomicInteger lastOut = new AtomicInteger(0);
     private final AtomicInteger lastIn = new AtomicInteger(0);
+    private Consumer<String> listener;
     private long lastHash;
 
     public PendingMessages(Logger logger, AttackStatus attackStatus) {

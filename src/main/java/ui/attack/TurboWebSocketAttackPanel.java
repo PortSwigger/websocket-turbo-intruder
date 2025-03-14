@@ -65,6 +65,18 @@ public class TurboWebSocketAttackPanel extends JPanel {
         return panel;
     }
 
+    private static JButton getClearButton(JTextArea textArea) {
+        JButton clearButton = new JButton("Clear");
+        clearButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Clear the JTextArea
+                textArea.setText("");
+            }
+        });
+        return clearButton;
+    }
+
     private void initComponents() {
         WebSocketMessageEditor requestWebSocketMessageEditor = userInterface.createWebSocketMessageEditor(READ_ONLY);
         WebSocketMessageEditor responseWebSocketMessageEditor = userInterface.createWebSocketMessageEditor(READ_ONLY);
@@ -158,18 +170,6 @@ public class TurboWebSocketAttackPanel extends JPanel {
         panel.add(topPanel, BorderLayout.NORTH);
         panel.add(scrollPane, BorderLayout.CENTER);
         return panel;
-    }
-
-    private static JButton getClearButton(JTextArea textArea) {
-        JButton clearButton = new JButton("Clear");
-        clearButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // Clear the JTextArea
-                textArea.setText("");
-            }
-        });
-        return clearButton;
     }
 
     private Component getHaltConfigureButton() {

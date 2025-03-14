@@ -1,7 +1,5 @@
 package attack;
 
-import burp.api.montoya.collaborator.CollaboratorClient;
-import burp.api.montoya.collaborator.Interaction;
 import data.AttackDetails;
 import data.ConnectionMessage;
 import data.MessagesToDisplay;
@@ -11,17 +9,14 @@ import queue.SendMessageQueueConsumer;
 import queue.TableBlockingQueueConsumer;
 import turbo.TurboThreadExecutor;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
 import static java.time.LocalTime.now;
-import static java.util.concurrent.Executors.newFixedThreadPool;
 import static logger.LoggerLevel.DEBUG;
 import static logger.LoggerLevel.UI;
 
 public class AttackManager implements AttackStarter, AttackStopper {
-    private long startTime;
     private final Logger logger;
     private final PendingMessages pendingMessages;
     private final MessagesToDisplay messagesToDisplay;
@@ -61,8 +56,9 @@ public class AttackManager implements AttackStarter, AttackStopper {
                         pendingMessages
                 )
         );
-        startTime = System.currentTimeMillis();
-        String message = String.format("Number of threads attack started with: %d, Time: %d", attackDetails.numberOfThreads(), startTime);
+        String message = String.format("[%s] Number of threads attack started with: %d",
+                now().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS")),
+                attackDetails.numberOfThreads());
         logger.logOutput(UI, new String(new char[message.length()]).replace("\0", "—"));
         logger.logOutput(UI, message);
 

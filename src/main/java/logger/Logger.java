@@ -42,6 +42,7 @@ public class Logger {
             case DEFAULT -> logging.logToOutput(output);
         }
     }
+
     public void logOutput(LoggerLevel loggerLevel, ByteBuffer output) {
         byte[] bytes = output.array();
         StringBuilder hexDump = new StringBuilder();
@@ -72,6 +73,7 @@ public class Logger {
         }
         logOutput(loggerLevel, hexDump.toString());
     }
+
     public void logOutput(String output) {
         logging.logToOutput(output);
     }

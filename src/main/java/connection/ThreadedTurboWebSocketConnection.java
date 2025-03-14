@@ -3,6 +3,7 @@ package connection;
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.websocket.Direction;
 import burp.api.montoya.websocket.extension.ExtensionWebSocket;
+import burp.api.montoya.websocket.extension.ExtensionWebSocketCreationStatus;
 import data.AttackIdAndWebSocketConnectionMessage;
 import data.ConnectionMessage;
 import data.PendingMessages;
@@ -16,17 +17,19 @@ import utils.Utilities;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.*;
-
-import static java.lang.Thread.sleep;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static burp.api.montoya.websocket.Direction.CLIENT_TO_SERVER;
+import static java.lang.Thread.sleep;
 import static java.time.LocalDateTime.now;
 
-public class MultiThreadTurboWebSocketConnection implements Connection, TurboWebSocketInterface {
+public class ThreadedTurboWebSocketConnection implements Connection, TurboWebSocketInterface {
     private static final int DEFAULT_INTERVAL = 10;
-//    public final AtomicInteger outCounter = new AtomicInteger(0);
+    public final BlockingQueue<ConnectionMessage> outQueue;
+    //    public final AtomicInteger outCounter = new AtomicInteger(0);
     private final Logger logger;
     private final PendingMessages pendingMessages;
     private final int attackId;
@@ -36,15 +39,13 @@ public class MultiThreadTurboWebSocketConnection implements Connection, TurboWeb
     private final PayloadManipulator payloadManipulator;
     private final List<TurboExtensionWebSocket> webSocketPool = new CopyOnWriteArrayList<>();
     private final TurboThreadExecutor senderExecutor;
-
     // For simple round-robin, keep a counter
     private final AtomicInteger roundRobinIndex = new AtomicInteger(0);
     private final AtomicInteger outCounter = new AtomicInteger(0);
-    public final BlockingQueue<ConnectionMessage> outQueue;
-    private boolean running;
     private final CounterMap counterMap;
+    private boolean running;
 
-    public MultiThreadTurboWebSocketConnection(
+    public ThreadedTurboWebSocketConnection(
             Logger logger,
             PendingMessages pendingMessages,
             int attackId,
@@ -75,7 +76,7 @@ public class MultiThreadTurboWebSocketConnection implements Connection, TurboWeb
                 webSocketPool.add(socket);
                 logger.logOutput(LoggerLevel.DEBUG, "WebSocket #" + (i + 1) + " created successfully.");
             } catch (Exception e) {
-                logger.logOutput(LoggerLevel.DEBUG,"Failed to create WebSocket #" + (i + 1) + ": " + e.getMessage());
+                logger.logOutput(LoggerLevel.DEBUG, "Failed to create WebSocket #" + (i + 1) + ": " + e.getMessage());
             }
         }
     }
@@ -128,7 +129,7 @@ public class MultiThreadTurboWebSocketConnection implements Connection, TurboWeb
     }
 
     private void sendInternal(TurboExtensionWebSocket socket, String payload) {
-            socket.sendTextMessage(payload);
+        socket.sendTextMessage(payload);
     }
 
     private void sendInternal(TurboExtensionWebSocket socket, ByteBuffer payload) {
@@ -162,7 +163,7 @@ public class MultiThreadTurboWebSocketConnection implements Connection, TurboWeb
     private void queue(int code, byte[] payload, Long length) {
         queueInternal(new TurboWebSocketConnectionMessage(
                 outCounter.getAndIncrement(), code, ByteBuffer.wrap(payload), CLIENT_TO_SERVER, null,
-                now(), this, length ));
+                now(), this, length));
     }
 
     private void queueInternal(TurboWebSocketConnectionMessage message) {
@@ -218,6 +219,16 @@ public class MultiThreadTurboWebSocketConnection implements Connection, TurboWeb
                 )
         );
         return extWS;
+    }
+
+    @Override
+    public boolean isOpen() {
+        return !(webSocketPool.isEmpty());
+    }
+
+    @Override
+    public ExtensionWebSocketCreationStatus status() {
+        return ExtensionWebSocketCreationStatus.SUCCESS;
     }
 
     public void stop() {

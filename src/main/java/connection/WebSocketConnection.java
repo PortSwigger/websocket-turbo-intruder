@@ -5,6 +5,7 @@ import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.websocket.WebSockets;
 import burp.api.montoya.websocket.extension.ExtensionWebSocket;
 import burp.api.montoya.websocket.extension.ExtensionWebSocketCreation;
+import burp.api.montoya.websocket.extension.ExtensionWebSocketCreationStatus;
 import data.AttackIdAndWebSocketConnectionMessage;
 import data.ConnectionMessage;
 import data.PendingMessages;
@@ -126,6 +127,17 @@ public class WebSocketConnection implements Connection, TurboWebSocketInterface 
 
         return extensionWebSocket;
     }
+
+    @Override
+    public boolean isOpen() {
+        return extensionWebSocket != null;
+    }
+
+    @Override
+    public ExtensionWebSocketCreationStatus status() {
+        return ExtensionWebSocketCreationStatus.SUCCESS;
+    }
+
     public void stop() {
         if (extensionWebSocket != null) extensionWebSocket.close();
     }

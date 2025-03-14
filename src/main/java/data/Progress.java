@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class Progress {
+    public static String PROGRESS_BAR_STRING = "[ → | ← | Size| Words | Duration | Time | # ]";
     long in;
     long out;
     long hash;
@@ -11,7 +12,6 @@ public class Progress {
     int word;
     long duration;
     LocalDateTime time;
-    public static String PROGRESS_BAR_STRING = "[ → | ← | Size| Words | Duration | Time | # ]";
 
     public Progress(long in, long out, long hash, LocalDateTime time) {
         this.in = in;

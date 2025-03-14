@@ -4,7 +4,6 @@ import burp.api.montoya.websocket.BinaryMessage;
 import burp.api.montoya.websocket.TextMessage;
 import burp.api.montoya.websocket.extension.ExtensionWebSocketMessageHandler;
 import connection.Connection;
-import connection.MultiThreadTurboWebSocketConnection;
 import data.AttackIdAndWebSocketConnectionMessage;
 import logger.Logger;
 import utils.Utilities;
@@ -55,7 +54,7 @@ public class TurboWebSocketExtensionWebSocketMessageHandler implements Extension
                 new AttackIdAndWebSocketConnectionMessage(
                         attackId,
                         new TurboWebSocketConnectionMessage(
-                                Utilities.generateID(ID,id),
+                                Utilities.generateID(ID, id),
                                 textMessage.payload(),
                                 textMessage.direction(),
                                 comment,

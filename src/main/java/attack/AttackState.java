@@ -27,7 +27,7 @@ public class AttackState implements AttackStatus {
         return attackId.get();
     }
 
-    void newAttack() {
+    public void newAttack() {
         isRunning.set(true);
         attackId.incrementAndGet();
     }

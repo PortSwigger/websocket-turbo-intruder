@@ -8,7 +8,6 @@ import data.PendingMessages;
 import data.RawWebsocketConfig;
 import logger.Logger;
 import socket.TurboConfig;
-import socket.TurboExtensionWebSocket;
 import socket.TurboWebSocketMessagePublisher;
 import socket.TurboWebSockets;
 
@@ -47,28 +46,25 @@ public class ConnectionFactory {
     @SuppressWarnings("unused") // called by Python
     public Connection create(HttpRequest upgradeRequest, Engine engine, TurboConfig config) throws Exception {
         switch (engine) {
-            case RAW -> {
-                return new RawWebSocketConnection(logger, pendingMessages, attackId, upgradeRequest, publisher,
-                        new RawWebsocketConfig(Engine.RAW, config.connectionTimeout(), config().isPinging()));
-            }
             case TURBO -> {
                 return new TurboWebSocketConnection(logger, pendingMessages, attackId, upgradeRequest, publisher, config);
             }
-            case MULTI -> {
-                return new MultiThreadTurboWebSocketConnection(logger, pendingMessages, attackId, upgradeRequest, publisher, config);
+            case THREADED -> {
+                return new ThreadedTurboWebSocketConnection(logger, pendingMessages, attackId, upgradeRequest, publisher, config);
             }
             case null, default -> {
                 return connection(upgradeRequest);
             }
         }
     }
+
     public Connection create(HttpRequest upgradeRequest, Engine engine) throws Exception {
         switch (engine) {
             case TURBO -> {
                 return new TurboWebSocketConnection(logger, pendingMessages, attackId, upgradeRequest, publisher, TurboConfig.turbo());
             }
-            case MULTI -> {
-                return new MultiThreadTurboWebSocketConnection(logger, pendingMessages, attackId, upgradeRequest, publisher, TurboConfig.multi());
+            case THREADED -> {
+                return new ThreadedTurboWebSocketConnection(logger, pendingMessages, attackId, upgradeRequest, publisher, TurboConfig.threaded());
             }
             case null, default -> {
                 return connection(upgradeRequest);

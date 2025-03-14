@@ -3,6 +3,7 @@ package connection;
 import burp.api.montoya.core.ByteArray;
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.websocket.Direction;
+import burp.api.montoya.websocket.extension.ExtensionWebSocketCreationStatus;
 import data.AttackIdAndWebSocketConnectionMessage;
 import data.ConnectionMessage;
 import data.PendingMessages;
@@ -73,13 +74,19 @@ public class TurboWebSocketConnection implements Connection, TurboWebSocketInter
     private void queue(int code, byte[] payload, Long length) {
         queueInternal(new TurboWebSocketConnectionMessage(
                 outCounter.getAndIncrement(), code, ByteBuffer.wrap(payload), CLIENT_TO_SERVER, null,
-                now(), this, length ));
+                now(), this, length));
     }
 
     /**
      * Centralized method to enqueue a message into pendingMessages.
      */
-    private void queueInternal(TurboWebSocketConnectionMessage message) {
+    public TurboWebSocketConnectionMessage createMessage(int code, byte[] payload, Long length) {
+        return new TurboWebSocketConnectionMessage(
+                outCounter.getAndIncrement(), code, ByteBuffer.wrap(payload), CLIENT_TO_SERVER, null,
+                now(), this, length);
+    }
+
+    public void queueInternal(TurboWebSocketConnectionMessage message) {
         pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, message));
     }
 
@@ -133,7 +140,7 @@ public class TurboWebSocketConnection implements Connection, TurboWebSocketInter
         TurboExtensionWebSocket extensionWebSocket;
 
         TurboExtensionWebSocketCreation extensionWebSocketCreation = webSockets.createWebSocket(upgradeRequest);
-        logger.logOutput(LoggerLevel.DEBUG, "Raw Websocket Upgrade request: " + upgradeRequest);
+        logger.logOutput(LoggerLevel.DEBUG, "Websocket Upgrade request: " + upgradeRequest);
 
         if (extensionWebSocketCreation.webSocket().isPresent()) {
             extensionWebSocket = (TurboExtensionWebSocket) extensionWebSocketCreation.webSocket().get();
@@ -153,6 +160,15 @@ public class TurboWebSocketConnection implements Connection, TurboWebSocketInter
         }
 
         return extensionWebSocket;
+    }
+
+    public boolean isOpen() {
+        return extensionWebSocket.isOpen();
+    }
+
+    @Override
+    public ExtensionWebSocketCreationStatus status() {
+        return extensionWebSocket.getStatus();
     }
 
     public void stop() {

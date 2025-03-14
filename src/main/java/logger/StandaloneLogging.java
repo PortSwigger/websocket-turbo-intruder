@@ -2,13 +2,7 @@ package logger;
 
 import burp.api.montoya.logging.Logging;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.logging.*;
-
-
 import java.io.PrintStream;
-import java.util.logging.Logger;
 
 public class StandaloneLogging implements Logging {
 //    private static final Logger logger = Logger.getLogger("WebSocketFuzzer");
@@ -36,10 +30,12 @@ public class StandaloneLogging implements Logging {
     @Override
     public void logToOutput(String message) {
         synchronized (LOCK) {
-            outputStream.print(MOVE_UP);
-            outputStream.print(CLEAR_LINE);
+//            outputStream.print(MOVE_UP);
+//            outputStream.print(CLEAR_LINE);
+//            outputStream.println(message);
+//            outputStream.print(MOVE_DOWN);
+//            outputStream.flush();
             outputStream.println(message);
-            outputStream.print(MOVE_DOWN);
             outputStream.flush();
         }
     }
@@ -70,6 +66,8 @@ public class StandaloneLogging implements Logging {
             outputStream.print(CLEAR_LINE);
             outputStream.printf("\r%s", message);
             outputStream.flush();
+//            outputStream.println(message);
+//            outputStream.flush();
         }
     }
 

@@ -15,12 +15,13 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 public class TurboHttpRequest implements HttpRequest {
-
+    private String url;
     private String request;
     private TurboHttpService service;
 
     public TurboHttpRequest(String request, String url) {
         this.request = request;
+        this.url = url;
         this.service = new TurboHttpService(url);
     }
 
@@ -36,7 +37,7 @@ public class TurboHttpRequest implements HttpRequest {
 
     @Override
     public String url() {
-        return "";
+        return this.url;
     }
 
     @Override
@@ -46,6 +47,21 @@ public class TurboHttpRequest implements HttpRequest {
 
     @Override
     public String path() {
+        return "";
+    }
+
+    @Override
+    public String query() {
+        return "";
+    }
+
+    @Override
+    public String pathWithoutQuery() {
+        return "";
+    }
+
+    @Override
+    public String fileExtension() {
         return "";
     }
 
@@ -105,12 +121,27 @@ public class TurboHttpRequest implements HttpRequest {
     }
 
     @Override
+    public boolean hasParameters(HttpParameterType httpParameterType) {
+        return false;
+    }
+
+    @Override
     public ParsedHttpParameter parameter(String s, HttpParameterType httpParameterType) {
         return null;
     }
 
     @Override
     public String parameterValue(String s, HttpParameterType httpParameterType) {
+        return "";
+    }
+
+    @Override
+    public ParsedHttpParameter parameter(String s) {
+        return null;
+    }
+
+    @Override
+    public String parameterValue(String s) {
         return "";
     }
 
@@ -250,6 +281,16 @@ public class TurboHttpRequest implements HttpRequest {
     }
 
     @Override
+    public HttpRequest withAddedHeaders(List<? extends HttpHeader> list) {
+        return null;
+    }
+
+    @Override
+    public HttpRequest withAddedHeaders(HttpHeader... httpHeaders) {
+        return null;
+    }
+
+    @Override
     public HttpRequest withUpdatedHeader(String s, String s1) {
         return null;
     }
@@ -260,12 +301,32 @@ public class TurboHttpRequest implements HttpRequest {
     }
 
     @Override
+    public HttpRequest withUpdatedHeaders(List<? extends HttpHeader> list) {
+        return null;
+    }
+
+    @Override
+    public HttpRequest withUpdatedHeaders(HttpHeader... httpHeaders) {
+        return null;
+    }
+
+    @Override
     public HttpRequest withRemovedHeader(String s) {
         return null;
     }
 
     @Override
     public HttpRequest withRemovedHeader(HttpHeader httpHeader) {
+        return null;
+    }
+
+    @Override
+    public HttpRequest withRemovedHeaders(List<? extends HttpHeader> list) {
+        return null;
+    }
+
+    @Override
+    public HttpRequest withRemovedHeaders(HttpHeader... httpHeaders) {
         return null;
     }
 

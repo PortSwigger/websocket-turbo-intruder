@@ -8,6 +8,7 @@ import data.InitialWebSocketMessage;
 import logger.Logger;
 import ui.attack.TurboWebSocketAttackPanel;
 import ui.attack.table.WebSocketMessageTableModel;
+import ui.editor.AiManager;
 import ui.editor.WebSocketEditorPanel;
 
 import javax.swing.*;
@@ -25,6 +26,7 @@ public class WebSocketFrame extends JFrame {
     WebSocketFrame(
             Logger logger,
             UserInterface userInterface,
+            AiManager aiManager,
             FileLocationConfiguration fileLocationConfiguration,
             InitialWebSocketMessage webSocketMessage,
             WebSocketMessageTableModel webSocketMessageTableModel,
@@ -64,6 +66,7 @@ public class WebSocketFrame extends JFrame {
 
         cardDeck.add(
                 new WebSocketEditorPanel(
+                        aiManager,
                         logger,
                         userInterface,
                         fileLocationConfiguration,
@@ -74,16 +77,6 @@ public class WebSocketFrame extends JFrame {
                 EDITOR_PANEL_NAME
         );
 
-//        cardDeck.add(
-//                new WebSocketAttackPanel(
-//                        userInterface,
-//                        attackManager,
-//                        attackStatus,
-//                        panelSwitcher,
-//                        webSocketMessageTableModel
-//                ),
-//                ATTACK_PANEL_NAME
-//        );
         cardDeck.add(
                 new TurboWebSocketAttackPanel(
                         userInterface,

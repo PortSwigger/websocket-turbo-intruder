@@ -59,7 +59,7 @@ public class TurboWebSocketMessageTableModel extends AbstractTableModel {
     public void add(ConnectionMessage connectionMessage) {
         invokeLater(() ->
         {
-            if(connectionMessage.getDirection() == Direction.CLIENT_TO_SERVER) {
+            if (connectionMessage.getDirection() == Direction.CLIENT_TO_SERVER) {
                 connectionMessageList.add(connectionMessage);
             } else {
                 int index = displayConnectionMessageList.size();

@@ -13,12 +13,12 @@ public class MessageUtilities {
     public static String messageToString(ConnectionMessage webSocketConnectionMessage) {
         StringBuilder sb = new StringBuilder();
         sb.append("( ");
-        for (AttackTableColumns column: AttackTableColumns.values()) {
+        for (AttackTableColumns column : AttackTableColumns.values()) {
             sb.append(switch (column.ordinal()) {
                 case 0 -> String.valueOf(webSocketConnectionMessage.getId());
                 case 1 -> String.valueOf(webSocketConnectionMessage.getHash());
                 case 2 -> webSocketConnectionMessage.getDirection() == Direction.CLIENT_TO_SERVER ?
-                    "to server" : "to client";
+                        "to server" : "to client";
                 case 3 -> String.valueOf(webSocketConnectionMessage.getMessageLength());
                 case 4 ->
                         webSocketConnectionMessage.getDateTime().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS dd LLL yyyy"));
@@ -31,12 +31,27 @@ public class MessageUtilities {
         sb.append(" )");
         return sb.toString();
     }
+
     private static String formatFixedLength(String input, int length) {
         if (input.length() >= length) {
             return input.substring(0, length) + "...";
         } else {
             return String.format("%-" + length + "s", input);
         }
+    }
+
+    public static String messagePairToStringSimple(Pair<ConnectionMessage, ConnectionMessage> requestResponse) {
+        StringBuilder stringBuilder = new StringBuilder();
+        ConnectionMessage response = requestResponse.getSecond();
+        long in = 0;
+        String request = "";
+        if (requestResponse.getFirst() != null) {
+            in = requestResponse.getFirst().getId();
+            request = formatFixedLength(requestResponse.getFirst().getMessage(), DEFAULT_MESSAGE_LENGTH);
+        }
+        String res = formatFixedLength(response.getMessage(), DEFAULT_MESSAGE_LENGTH).replaceAll("\r?\n", "\\\\n");
+        stringBuilder.append(String.format("[ → %-5d | ← %-5d | %-5d ms| %s | %s ]", in, response.getId(), response.getTime(), request, res));
+        return stringBuilder.toString();
     }
 
     public static String messagePairToString(Pair<ConnectionMessage, ConnectionMessage> requestResponse) {

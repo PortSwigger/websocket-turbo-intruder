@@ -15,20 +15,24 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
-import static java.awt.EventQueue.invokeLater;
-
 public class StandaloneWebSocketMessageModel {
     private final Logger logger;
     private final List<ConnectionMessage> connectionMessageList;
     private String logFilePath;
 
+    public StandaloneWebSocketMessageModel(Logger logger, String logFilePath) {
+        this.logger = logger;
+        this.logFilePath = logFilePath;
+        this.connectionMessageList = new ArrayList<>();
+    }
+
     private void saveToFile(Pair<ConnectionMessage, ConnectionMessage> requestResponse) {
-        String request = requestResponse.getFirst() == null ? "":
+        String request = requestResponse.getFirst() == null ? "" :
                 Base64.getUrlEncoder().encodeToString(requestResponse.getFirst().getMessageByteBuffer().array());
         ConnectionMessage message = requestResponse.getSecond();
         JSONObject json = new JSONObject();
         json.put("id", message.getId());
-        json.put("hash",message.getHash());
+        json.put("hash", message.getHash());
         json.put("duration", message.getTime());
         json.put("time", message.getDateTime().format(DateTimeFormatter.ofPattern("HH:mm:ss.SS dd LLL yyyy")));
         json.put("comment", message.getComment());
@@ -43,19 +47,13 @@ public class StandaloneWebSocketMessageModel {
         }
     }
 
-    public StandaloneWebSocketMessageModel(Logger logger, String logFilePath) {
-        this.logger = logger;
-        this.logFilePath = logFilePath;
-        this.connectionMessageList = new ArrayList<>();
-    }
-
     public void add(ConnectionMessage connectionMessage) {
         int index = connectionMessageList.size();
         connectionMessageList.add(connectionMessage);
         Pair<ConnectionMessage, ConnectionMessage> requestResponse = getPair(index);
-        if (requestResponse.getSecond() != null ) {
+        if (requestResponse.getSecond() != null) {
             saveToFile(requestResponse);
-            logger.logOutput(MessageUtilities.messagePairToString(requestResponse));
+            logger.logOutput(MessageUtilities.messagePairToStringSimple(requestResponse));
         }
     }
 

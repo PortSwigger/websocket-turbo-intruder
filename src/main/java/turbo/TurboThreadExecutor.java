@@ -24,31 +24,31 @@ public class TurboThreadExecutor {
 
     public void submitTask(Runnable task) {
         executorService.submit(() -> {
-            logger.logOutput( LoggerLevel.DEBUG, "Task started: " + task);
+            logger.logOutput(LoggerLevel.DEBUG, "Task started: " + task);
             try {
                 task.run();
             } catch (Exception e) {
                 logger.logOutput("Unkonwn exception: " + e.getMessage());
             } finally {
-                logger.logOutput( LoggerLevel.DEBUG, "Task completed: " + task);
+                logger.logOutput(LoggerLevel.DEBUG, "Task completed: " + task);
             }
         });
     }
 
     public void shutdown() {
-        logger.logOutput( LoggerLevel.DEBUG, "Shutting down Executor service...");
+        logger.logOutput(LoggerLevel.DEBUG, "Shutting down Executor service...");
         executorService.shutdown();
         try {
             if (!executorService.awaitTermination(100, TimeUnit.MILLISECONDS)) {
-                logger.logOutput( LoggerLevel.DEBUG, "Service did not terminate in the specified time.");
+                logger.logOutput(LoggerLevel.DEBUG, "Service did not terminate in the specified time.");
                 executorService.shutdownNow();
             }
         } catch (InterruptedException e) {
-            logger.logOutput( LoggerLevel.DEBUG, "Service interrupted during shutdown, forcing shutdownNow.");
+            logger.logOutput(LoggerLevel.DEBUG, "Service interrupted during shutdown, forcing shutdownNow.");
             executorService.shutdownNow();
         }
-        logger.logOutput( LoggerLevel.DEBUG, "Executor Service shut down.");
-        logger.logOutput( LoggerLevel.DEBUG, "Total tasks completed: " + executorService.getCompletedTaskCount());
-        logger.logOutput( LoggerLevel.DEBUG, "Total active threads: " + executorService.getActiveCount());
+        logger.logOutput(LoggerLevel.DEBUG, "Executor Service shut down.");
+        logger.logOutput(LoggerLevel.DEBUG, "Total tasks completed: " + executorService.getCompletedTaskCount());
+        logger.logOutput(LoggerLevel.DEBUG, "Total active threads: " + executorService.getActiveCount());
     }
 }

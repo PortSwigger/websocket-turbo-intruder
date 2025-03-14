@@ -5,6 +5,7 @@ import burp.api.montoya.ui.contextmenu.ContextMenuItemsProvider;
 import burp.api.montoya.ui.contextmenu.WebSocketContextMenuEvent;
 import data.HttpContextMenuEventAdapter;
 import data.WebSocketContextMenuEventAdapter;
+import ui.EmbeddedServerFrameFactory;
 import ui.WebSocketFrameFactory;
 
 import javax.swing.*;
@@ -18,15 +19,18 @@ import static burp.WebSocketFuzzer.EXTENSION_NAME;
 public class WebSocketContextMenuItemsProvider implements ContextMenuItemsProvider {
     private final Consumer<JFrame> newFrameConsumer;
     private final WebSocketFrameFactory webSocketFrameFactory;
+    private final EmbeddedServerFrameFactory embeddedServerFrameFactory;
     private final HttpContextMenuEventAdapter httpContextMenuEventAdapter;
     private final WebSocketContextMenuEventAdapter webSocketContextMenuEventAdapter;
 
     public WebSocketContextMenuItemsProvider(
             Consumer<JFrame> newFrameConsumer,
-            WebSocketFrameFactory webSocketFrameFactory
+            WebSocketFrameFactory webSocketFrameFactory,
+            EmbeddedServerFrameFactory embeddedServerFrameFactory
     ) {
         this.newFrameConsumer = newFrameConsumer;
         this.webSocketFrameFactory = webSocketFrameFactory;
+        this.embeddedServerFrameFactory = embeddedServerFrameFactory;
         this.webSocketContextMenuEventAdapter = new WebSocketContextMenuEventAdapter();
         this.httpContextMenuEventAdapter = new HttpContextMenuEventAdapter();
     }
@@ -47,7 +51,10 @@ public class WebSocketContextMenuItemsProvider implements ContextMenuItemsProvid
         JMenuItem sendToContextMenuItem = new JMenuItem("Send to " + EXTENSION_NAME);
         sendToContextMenuItem.addActionListener(l -> performWebSocketAction(event));
 
-        return List.of(sendToContextMenuItem);
+        JMenuItem sendToEmbeddedServerContextMenuItem = new JMenuItem("Send to Embedded Server");
+        sendToEmbeddedServerContextMenuItem.addActionListener(l -> performEmbeddedHttpServerAction(event));
+
+        return List.of(sendToContextMenuItem, sendToEmbeddedServerContextMenuItem);
     }
 
     private void performWebSocketAction(WebSocketContextMenuEvent event) {
@@ -60,5 +67,9 @@ public class WebSocketContextMenuItemsProvider implements ContextMenuItemsProvid
         httpContextMenuEventAdapter.apply(event).stream()
                 .map(webSocketFrameFactory::from)
                 .forEach(newFrameConsumer);
+    }
+
+    private void performEmbeddedHttpServerAction(WebSocketContextMenuEvent event) {
+        newFrameConsumer.accept(embeddedServerFrameFactory.from(webSocketContextMenuEventAdapter.apply(event)));
     }
 }

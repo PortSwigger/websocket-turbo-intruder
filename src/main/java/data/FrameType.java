@@ -17,6 +17,7 @@ public enum FrameType {
         }
         return null;
     }
+
     public static FrameType from(int b) {
         for (FrameType type : FrameType.values()) {
             if (type.value == b) {

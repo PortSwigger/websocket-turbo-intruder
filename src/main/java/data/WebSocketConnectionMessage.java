@@ -2,13 +2,11 @@ package data;
 
 import burp.api.montoya.websocket.Direction;
 import connection.WebSocketConnection;
-import utils.StringUtillities;
 
 import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static java.time.LocalDateTime.now;
@@ -77,13 +75,13 @@ public class WebSocketConnectionMessage implements ConnectionMessage {
     }
 
     @Override
-    public void setTime(long time) {
-    this.time = time;
+    public long getTime() {
+        return time;
     }
 
     @Override
-    public long getTime() {
-        return time;
+    public void setTime(long time) {
+        this.time = time;
     }
 
     @Override

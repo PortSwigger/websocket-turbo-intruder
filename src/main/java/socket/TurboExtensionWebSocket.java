@@ -22,12 +22,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -40,7 +42,7 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
     private static final int DEFAULT_QUEUE_SIZE = 1024;
     private static final int DEFAULT_READ_BUFFER_SIZE = 8192;
     private static final int DEFAULT_WRITE_BUFFER_SIZE = 8192;
-
+    public final AtomicInteger reconnectCounter = new AtomicInteger(0);
     private final String host;
     private final int port;
     private final boolean isSecure;
@@ -51,8 +53,6 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
     private final TurboConfig config;
     private final BlockingQueue<FrameData> queue;
     private final Lock reconnectLock = new ReentrantLock();
-    public final AtomicInteger reconnectCounter = new AtomicInteger(0);
-
     // Socket and streams
     private Socket socket;
     private OutputStream ostream;
@@ -90,12 +90,16 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
             // 3) Handle incoming frames
             setup();
 
-        } catch (IOException e) {
-            throw new RawException(e.getMessage());
+        } catch (IllegalArgumentException exception) {
+            this.status = ExtensionWebSocketCreationStatus.INVALID_HOST;
+            throw new RawException(exception.getMessage());
+        } catch (IOException exception) {
+            this.status = ExtensionWebSocketCreationStatus.CONNECTION_FAILED;
+            throw new RawException(exception.getMessage());
         }
     }
 
-    private void initializeSocket(boolean reconnect) throws IOException {
+    private void initializeSocket(boolean reconnect) throws IOException, SocketTimeoutException, IllegalArgumentException {
         // If not reconnecting, or if socket is null/closed, create a fresh socket
         if (socket == null || reconnect || socket.isClosed()) {
             socket = new Socket();
@@ -115,7 +119,7 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
         ostream = socket.getOutputStream();
     }
 
-    private void configureSocket() throws IOException {
+    private void configureSocket() throws IOException, SocketTimeoutException, IllegalArgumentException {
         socket.setTcpNoDelay(true);
         socket.setReuseAddress(true);
         if (!socket.isConnected()) {
@@ -131,9 +135,11 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
                         return null;
                     }
 
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) { }
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                    }
 
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) { }
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                    }
                 }
         };
 
@@ -233,17 +239,20 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
             if (istream != null) {
                 istream.close();
             }
-        } catch (IOException ignore) { }
+        } catch (IOException ignore) {
+        }
         try {
             if (ostream != null) {
                 ostream.close();
             }
-        } catch (IOException ignore) { }
+        } catch (IOException ignore) {
+        }
         try {
             if (socket != null && !socket.isClosed()) {
                 socket.close();
             }
-        } catch (IOException ignore) { }
+        } catch (IOException ignore) {
+        }
 
         socket = null;
         istream = null;
@@ -260,7 +269,7 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
             try {
                 // If we are already at max attempts, give up
                 if (reconnectCounter.getAndIncrement() >= config.retries()) {
-                    logger.logOutput(LoggerLevel.UI, "Max reconnect attempts reached. Closing.");
+                    logger.logOutput(LoggerLevel.DEBUG, "Max reconnect attempts reached. Closing.");
                     closeConnection();
                     return;
                 }
@@ -276,12 +285,15 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
                     performHandshake();
 
                     if (isOpen()) {
-                        logger.logOutput(LoggerLevel.UI, "Reconnected successfully.");
+                        logger.logOutput(LoggerLevel.DEBUG, "Reconnected successfully.");
                         success = true;
                         // Restart threads with new socket/streams
                         startReadThread();
                         startWriteThread();
                     }
+                } catch (SocketTimeoutException timeout) {
+                    logger.logOutput(LoggerLevel.DEBUG, "Aborting! Reconnect attempt timeout: " + timeout.getMessage());
+                    reconnectCounter.set(Integer.MAX_VALUE);
                 } catch (IOException ioEx) {
                     logger.logOutput(LoggerLevel.DEBUG, "Reconnect attempt failed: " + ioEx.getMessage());
                 }
@@ -291,7 +303,7 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
 
                     // Check if we still have attempts left, otherwise close
                     if (reconnectCounter.get() >= config.retries()) {
-                        logger.logOutput(LoggerLevel.UI, "Failed to reconnect after max attempts.");
+                        logger.logOutput(LoggerLevel.DEBUG, "Failed to reconnect after max attempts.");
                         closeConnection();
                     }
                 }
@@ -304,6 +316,14 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
         }
     }
 
+    public void textMessageReceived(int id, byte[] payload, String comment) {
+        messageHandler.textMessageReceived(
+                id,
+                new TurboTextMessage(payload, Direction.SERVER_TO_CLIENT),
+                comment,
+                LocalDateTime.now());
+    }
+
     /**
      * Called when a valid (decoded) FrameData is received from the server.
      */
@@ -314,17 +334,9 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
                 List<FrameData> unprocessed = new ArrayList<>();
                 queue.drainTo(unprocessed);
                 for (FrameData d : unprocessed) {
-                    messageHandler.textMessageReceived(
-                            -1,
-                            new TurboTextMessage(d.getPayload(), Direction.SERVER_TO_CLIENT),
-                            "Initial message",
-                            LocalDateTime.now());
+                    textMessageReceived(-1, d.getPayload(), "Initial message");
                 }
-                messageHandler.textMessageReceived(
-                        engine.outCounter.getAndIncrement(),
-                        new TurboTextMessage(data.getPayload(), Direction.SERVER_TO_CLIENT),
-                        "",
-                        LocalDateTime.now());
+                textMessageReceived(engine.outCounter.getAndIncrement(), data.getPayload(), "");
             } else {
                 queue.put(data);
             }
@@ -341,6 +353,7 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
     public void closeConnection() {
         stopThreads();
         closeSocket();
+        this.status = ExtensionWebSocketCreationStatus.CONNECTION_FAILED;
         executorService.shutdown();
     }
 
@@ -465,11 +478,13 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
                     sleep(config.sendingInterval());
                 } catch (IllegalArgumentException e) {
                     if (running) {
+                        logger.logOutput(LoggerLevel.DEBUG, e.getMessage());
+
                         accumulatedBuffer.flip();
                         byte[] validBytes = new byte[accumulatedBuffer.remaining()];
                         accumulatedBuffer.get(validBytes);
 
-                        logger.logOutput(LoggerLevel.UI, ByteBuffer.wrap(validBytes));
+                        logger.logOutput(LoggerLevel.DEBUG, ByteBuffer.wrap(validBytes));
                         stopReading();
                         reconnect();
                     }
@@ -503,14 +518,14 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
             while (running && !Thread.currentThread().isInterrupted()) {
                 try {
                     writeQueuedData();
-                    sleep(config.sendingInterval() <=0 ? 10 : config.sendingInterval());
+                    sleep(config.sendingInterval() <= 0 ? 10 : config.sendingInterval());
                 } catch (IOException ex) {
                     if (running) {
                         logger.logOutput(LoggerLevel.DEBUG, "IOException in write thread: " + ex.getMessage());
                         stopWriting();
                         reconnect();
                     }
-                } catch (InterruptedException  ie) {
+                } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     break;
                 } catch (Exception e) {
@@ -562,13 +577,10 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
             } else {
                 ByteBuffer buffer = engine.outQueue.take();
                 writeChunk(List.of(buffer));
-//                for (ByteBuffer buffer : bufferList) {
-//                    writeChunk(List.of(buffer));
-//                }
             }
         }
 
-        private void writeChunk(List<ByteBuffer> chunk) throws IOException{
+        private void writeChunk(List<ByteBuffer> chunk) throws IOException {
             // Calculate total size
             int size = 0;
             for (ByteBuffer b : chunk) {

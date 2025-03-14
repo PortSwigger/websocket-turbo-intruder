@@ -1,17 +1,19 @@
-import time
 def queue_websockets(upgrade_request, message):
+    """
+    queue(Integer code, byte[] message, String length)
+    Sends a binary message with a custom length defined as a Long string.
+    Supported codes:
+    - 1 - text
+    - 2 - binary
+    - 8 - close
+    - 9 - ping
+    - 10 - pong
+    """
     connection1 = websocket_connection.create(upgrade_request, Engine.TURBO)
-    connection1.queue("40")
+    connection1.queue(1, b"", "2147483647")
 
-@Pong("3")
 def handle_outgoing_message(websocket_message, interesting):
     results_table.add(websocket_message)
 
-def start(websocket_message):
-    for i in range(1):
-        websocket_message.getConnection().queue("42[\"message\",\"{}\"]".format(str(i)))
-@PingPong("2","3")
 def handle_incoming_message(websocket_message, interesting):
-    if websocket_message.getMessage().startswith("40"):
-        start(websocket_message)
     results_table.add(websocket_message)

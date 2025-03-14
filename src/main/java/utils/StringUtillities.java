@@ -5,7 +5,6 @@ import java.nio.charset.Charset;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.IntStream;
 
 import static java.lang.Character.isLetter;
 
@@ -26,13 +25,14 @@ public class StringUtillities {
             String utf8String = Character.toString(combinedValue);
             result.append(utf8String);
         }
-        if(input.length() % 2 == 1) result.append(input.charAt(input.length() - 1));
+        if (input.length() % 2 == 1) result.append(input.charAt(input.length() - 1));
         return result.toString();
     }
 
     public static String overlongUTF8(String code) {
         return overlongUTF8(code, 2, true);
     }
+
     public static String overlongUTF8(String code, int length, boolean unescaped) {
         List<String> output = new ArrayList<>();
 

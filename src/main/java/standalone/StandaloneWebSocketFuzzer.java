@@ -3,7 +3,9 @@ package standalone;
 import attack.AttackManager;
 import attack.AttackScriptExecutor;
 import attack.AttackState;
-import data.*;
+import data.AttackDetails;
+import data.MessagesToDisplay;
+import data.PendingMessages;
 import logger.Logger;
 import logger.StandaloneLogging;
 import python.ConnectionFactoryFactory;
@@ -66,14 +68,15 @@ public class StandaloneWebSocketFuzzer {
             Consumer<String> progress = new Consumer<String>() {
                 @Override
                 public void accept(String message) {
-                    logger.raiseInfoEvent(message);
+//                    logger.raiseInfoEvent(message);
                 }
             };
             attackManager.registerProgressListener(progress);
 
             Scanner s = new Scanner(System.in);
-
             System.out.println("Press enter to stop...");
+            System.out.println("[ → in    | ← out   | time  ms| client to server                 | server to client                     ]");
+
 
             s.nextLine();
 
@@ -89,8 +92,8 @@ public class StandaloneWebSocketFuzzer {
         } catch (IllegalArgumentException e) {
             logger.logError(e.getMessage());
             logger.logError("""
-                    Usage: java -jar WebSocketFuzzer.jar <scriptFile> <baseRequestFile> <endpoint> <message>
-                    Example: java -jar WebSocketFuzzer.jar resources/examples/basic.py resources/examples/request.txt https://example.net:443 foobar
+                    Usage: java -jar WebSocketFuzzer-1.2.2.jar <scriptFile> <baseRequestFile> <endpoint> <message>
+                    Example: java -jar WebSocketFuzzer-1.2.2.jar ./src/main/resources/examples/BasicExample.py ./src/test/resources/request.txt http://127.0.0.1:3000/echo %s
                     """);
         } catch (IOException e) {
             logger.logError("File Error: " + e.getMessage());

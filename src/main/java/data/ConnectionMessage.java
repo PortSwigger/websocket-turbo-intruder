@@ -20,9 +20,9 @@ public interface ConnectionMessage {
 
     long getDateTimeInMilliseconds();
 
-    void setTime(long time);
-
     long getTime();
+
+    void setTime(long time);
 
     String getComment();
 

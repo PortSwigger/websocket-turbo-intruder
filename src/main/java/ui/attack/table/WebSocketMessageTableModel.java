@@ -45,8 +45,7 @@ public class WebSocketMessageTableModel extends AbstractTableModel {
             case 3 -> webSocketConnectionMessage.getMessageLength();
             case 4 ->
                     webSocketConnectionMessage.getDateTime().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS dd LLL yyyy"));
-            case 5 ->
-                    webSocketConnectionMessage.getTime();
+            case 5 -> webSocketConnectionMessage.getTime();
             case 6 -> webSocketConnectionMessage.getComment();
             default -> "";
         };

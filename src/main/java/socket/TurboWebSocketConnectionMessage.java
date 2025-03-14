@@ -1,11 +1,7 @@
 package socket;
 
-import burp.api.montoya.core.ByteArray;
 import burp.api.montoya.websocket.Direction;
 import connection.Connection;
-import connection.MultiThreadTurboWebSocketConnection;
-import connection.TurboWebSocketConnection;
-import connection.WebSocketConnection;
 import data.ConnectionMessage;
 import data.FrameType;
 import data.WebSocketAttributeType;
@@ -18,7 +14,6 @@ import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 
-
 import static java.time.LocalDateTime.now;
 
 public class TurboWebSocketConnectionMessage implements ConnectionMessage {
@@ -26,6 +21,7 @@ public class TurboWebSocketConnectionMessage implements ConnectionMessage {
     private final Direction direction;
     private final LocalDateTime dateTime;
     private final Connection connection;
+    private final long length;
     private long id;
     private long hash;
     private int code;
@@ -33,7 +29,6 @@ public class TurboWebSocketConnectionMessage implements ConnectionMessage {
     private long time;
     private boolean interesting;
     private Map<WebSocketAttributeType, Integer> attributes;
-    private final long length;
 
     public TurboWebSocketConnectionMessage(long id, String message, Direction direction, Connection connection) {
         this(id, message, direction, null, connection);
@@ -56,6 +51,7 @@ public class TurboWebSocketConnectionMessage implements ConnectionMessage {
     public TurboWebSocketConnectionMessage(long id, int code, ByteBuffer message, Direction direction, String comment, LocalDateTime dateTime, Connection connection) {
         this(id, code, message, direction, comment, dateTime, connection, message.array().length);
     }
+
     // TODO calculate real time
     public TurboWebSocketConnectionMessage(long id, int code, ByteBuffer message, Direction direction, String comment, LocalDateTime dateTime, Connection connection, long length) {
         this.hash = id;
@@ -101,13 +97,13 @@ public class TurboWebSocketConnectionMessage implements ConnectionMessage {
     }
 
     @Override
-    public void setTime(long time) {
-        this.time = time;
+    public long getTime() {
+        return time;
     }
 
     @Override
-    public long getTime() {
-        return time;
+    public void setTime(long time) {
+        this.time = time;
     }
 
     @Override

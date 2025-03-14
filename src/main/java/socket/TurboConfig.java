@@ -1,7 +1,5 @@
 package socket;
 
-import data.Engine;
-
 public record TurboConfig(
         int connectionTimeout,
         int sendingInterval,
@@ -12,12 +10,14 @@ public record TurboConfig(
         boolean useChunks) {
 
     public TurboConfig() {
-        this( 1, 10, 1, 1, null, false, true);
+        this(1, 10, 1, 1, null, false, true);
     }
+
     public static TurboConfig turbo() {
         return new TurboConfig();
     }
-    public static TurboConfig multi() {
+
+    public static TurboConfig threaded() {
         return new TurboConfig(0, 10, 1, 10, null, true, true);
     }
 }

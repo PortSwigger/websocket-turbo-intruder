@@ -27,12 +27,33 @@ public class TurboWebSockets implements WebSockets {
 
     @Override
     public TurboExtensionWebSocketCreation createWebSocket(HttpService httpService, String s) {
+//        try {
+//            TurboExtensionWebSocket ws = new TurboExtensionWebSocket(
+//                    httpService.host(),
+//                    httpService.port(),
+//                    httpService.secure(),
+//                    s.getBytes(StandardCharsets.UTF_8),
+//                    logger,
+//                    config
+//            );
+//            if (ws.isOpen()) return new TurboExtensionWebSocketCreation(ws);
+//        } catch (RawException exception) {
+//            logger.logOutput(LoggerLevel.UI, exception.getMessage());
+//        }
+//        return TurboExtensionWebSocketCreation.empty();
+        return null;
+    }
+
+    @Override
+    public TurboExtensionWebSocketCreation createWebSocket(HttpRequest httpRequest) {
+//        return createWebSocket(httpRequest.httpService(), httpRequest.toString());
         try {
             TurboExtensionWebSocket ws = new TurboExtensionWebSocket(
-                    httpService.host(),
-                    httpService.port(),
-                    httpService.secure(),
-                    s.getBytes(StandardCharsets.UTF_8),
+                    httpRequest.httpService().host(),
+                    httpRequest.httpService().port(),
+                    httpRequest.httpService().secure(),
+                    httpRequest.toString().getBytes(StandardCharsets.UTF_8),
+//                    httpRequest.toByteArray().getBytes(),
                     logger,
                     config
             );
@@ -41,11 +62,6 @@ public class TurboWebSockets implements WebSockets {
             logger.logOutput(LoggerLevel.UI, exception.getMessage());
         }
         return TurboExtensionWebSocketCreation.empty();
-    }
-
-    @Override
-    public TurboExtensionWebSocketCreation createWebSocket(HttpRequest httpRequest) {
-        return createWebSocket(httpRequest.httpService(), httpRequest.toString());
     }
 
 }

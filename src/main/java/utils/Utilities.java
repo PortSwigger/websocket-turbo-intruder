@@ -22,6 +22,7 @@ import static burp.api.montoya.core.ByteArray.byteArray;
 
 public class Utilities {
     public static final int MAGIC = 0xD4D;
+    public static final String CONNECTION_CLOSED = "Connection closed";
     // Map of WebSocket close codes to reasons
     private static final Map<Integer, String> STATUS_CODE_REASONS = new HashMap<>();
     private static final String ENVIRONMENT = "ScriptEnvironment.py";
@@ -207,10 +208,10 @@ public class Utilities {
         // Map status code to predefined reason
         String predefinedReason = STATUS_CODE_REASONS.getOrDefault(
                 statusCode,
-                "Unknown status code: This code is not defined in the WebSocket specification."
+                String.format("%s: This code is not defined in the WebSocket specification.", CONNECTION_CLOSED)
         );
 
-        return String.format("Status Code: %d - %s%s", statusCode, predefinedReason, reason.isEmpty() ? "" : String.format(" Reason: %s", reason));
+        return String.format("%s: %d - %s%s", CONNECTION_CLOSED, statusCode, predefinedReason, reason.isEmpty() ? "" : String.format(" Reason: %s", reason));
     }
 
     public static boolean startsWith(byte[] array, byte[] prefix) {

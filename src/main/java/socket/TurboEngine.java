@@ -150,10 +150,10 @@ public class TurboEngine {
     }
 
     public void processClose(FrameData frame) {
-        logger.logOutput(LoggerLevel.UI, String.format("Connection was closed by server! %s",
-                decodeWebSocketCloseFrame(frame.getPayload())));
+        String status = decodeWebSocketCloseFrame(frame.getPayload());
+        webSocket.textMessageReceived(outCounter.getAndIncrement(), frame.getPayload(), status);
         throw new IllegalArgumentException("Connection was closed by server! "
-                + decodeWebSocketCloseFrame(frame.getPayload()));
+                + status);
     }
 
     public void processPing(FrameData frame) {

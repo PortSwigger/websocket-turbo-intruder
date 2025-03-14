@@ -21,8 +21,6 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 import static burp.api.montoya.websocket.Direction.CLIENT_TO_SERVER;
-import static burp.api.montoya.websocket.Direction.SERVER_TO_CLIENT;
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
 public class AttackScriptExecutor {
     private final Logger logger;
@@ -65,7 +63,7 @@ public class AttackScriptExecutor {
             throw new IllegalArgumentException(e);
         }
         threadExecutor = new TurboThreadExecutor(logger);
-        threadExecutor.submitTask(()-> interpreter.execute("queue_websockets(upgrade_request, message)"));
+        threadExecutor.submitTask(() -> interpreter.execute("queue_websockets(upgrade_request, message)"));
     }
 
     public void processMessage(ConnectionMessage webSocketConnectionMessage) {
@@ -125,12 +123,12 @@ public class AttackScriptExecutor {
         }
 
         @Override
-        public void setTime(long time) {
+        public long getTime() {
+            return webSocketConnectionMessage.getTime();
         }
 
         @Override
-        public long getTime() {
-            return webSocketConnectionMessage.getTime();
+        public void setTime(long time) {
         }
 
         @Override

@@ -9,10 +9,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableRowSorter;
 import java.awt.*;
-import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
 import java.util.function.Consumer;
 
 import static java.awt.EventQueue.invokeLater;

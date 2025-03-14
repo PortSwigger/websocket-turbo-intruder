@@ -4,8 +4,6 @@ import burp.api.montoya.http.HttpService;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Objects;
 
 public class TurboHttpService implements HttpService {
     private String host;
@@ -60,5 +58,10 @@ public class TurboHttpService implements HttpService {
     @Override
     public boolean secure() {
         return isSecure;
+    }
+
+    @Override
+    public String ipAddress() {
+        return "";
     }
 }

@@ -1,4 +1,7 @@
 def queue_websockets(upgrade_request, message):
+    """
+    Create two WebSocket connections manually.
+    """
     connection1 = websocket_connection.create(upgrade_request)
     connection2 = websocket_connection.create(upgrade_request)
 

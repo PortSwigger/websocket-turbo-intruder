@@ -3,7 +3,7 @@ package ui;
 import attack.AttackManager;
 import attack.AttackScriptExecutor;
 import attack.AttackState;
-import burp.api.montoya.collaborator.CollaboratorClient;
+import burp.api.montoya.ai.Ai;
 import burp.api.montoya.ui.UserInterface;
 import burp.api.montoya.websocket.WebSockets;
 import config.FileLocationConfiguration;
@@ -14,6 +14,7 @@ import logger.Logger;
 import python.ConnectionFactoryFactory;
 import socket.TurboWebSocketMessagePublisher;
 import ui.attack.table.WebSocketMessageTableModel;
+import ui.editor.AiManager;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -23,6 +24,7 @@ public class WebSocketFrameFactory {
     private final UserInterface userInterface;
     private final FileLocationConfiguration fileLocationConfiguration;
     private final WebSockets webSockets;
+    private final Ai ai;
     private final TurboWebSocketMessagePublisher publisher;
 
     public WebSocketFrameFactory(
@@ -30,12 +32,14 @@ public class WebSocketFrameFactory {
             UserInterface userInterface,
             FileLocationConfiguration fileLocationConfiguration,
             WebSockets webSockets,
+            Ai ai,
             TurboWebSocketMessagePublisher publisher
     ) {
         this.logger = logger;
         this.userInterface = userInterface;
         this.fileLocationConfiguration = fileLocationConfiguration;
         this.webSockets = webSockets;
+        this.ai = ai;
         this.publisher = publisher;
     }
 
@@ -68,10 +72,12 @@ public class WebSocketFrameFactory {
                 scriptExecutor,
                 attackState
         );
+        AiManager aiManager = new AiManager(logger, ai);
 
         WebSocketFrame webSocketFrame = new WebSocketFrame(
                 logger,
                 userInterface,
+                aiManager,
                 fileLocationConfiguration,
                 webSocketMessage,
                 webSocketMessageTableModel,
@@ -84,6 +90,7 @@ public class WebSocketFrameFactory {
                     @Override
                     public void windowClosed(WindowEvent e) {
                         attackManager.stopAttack();
+                        aiManager.stop();
                     }
                 }
         );

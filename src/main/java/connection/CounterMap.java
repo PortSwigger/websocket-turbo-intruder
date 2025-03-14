@@ -21,6 +21,7 @@ public class CounterMap {
     public void reset(int index) {
         counters.set(index, 0);
     }
+
     public void resetAll() {
         for (int i = 0; i < counters.length(); i++) {
             counters.set(i, 0);
