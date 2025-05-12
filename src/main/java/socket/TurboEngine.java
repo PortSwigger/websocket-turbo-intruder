@@ -165,7 +165,7 @@ public class TurboEngine {
     public void processPong(FrameData frame) {
         try {
             long time = System.currentTimeMillis() - Utilities.magicPong(frame.getPayload());
-            logger.logOutput(LoggerLevel.UI, String.format("Magic pong returned in %d milliseconds", time));
+            logger.logOutput(LoggerLevel.UI, String.format("Ping (Round-Trip Time): %d ms", time));
         } catch (IllegalArgumentException e) {
             // not magic
             if (frame.getPayload().length != 0)
