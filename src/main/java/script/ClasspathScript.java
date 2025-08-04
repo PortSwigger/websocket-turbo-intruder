@@ -6,36 +6,28 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
-class ClasspathScript implements Script
-{
+class ClasspathScript implements Script {
     private final Path path;
 
-    ClasspathScript(Path path)
-    {
+    ClasspathScript(Path path) {
         this.path = path;
     }
 
     @Override
-    public String content()
-    {
-        try (InputStream stream = this.getClass().getResourceAsStream(path.toString()))
-        {
-            if (stream == null)
-            {
+    public String content() {
+        try (InputStream stream = this.getClass().getResourceAsStream(path.toString())) {
+            if (stream == null) {
                 throw new IllegalStateException("Failed to retrieve Script content.");
             }
 
             return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return path.toString();
     }
 }

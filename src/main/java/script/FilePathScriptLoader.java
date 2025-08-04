@@ -9,26 +9,20 @@ import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 
-class FilePathScriptLoader implements ScriptLoader
-{
+class FilePathScriptLoader implements ScriptLoader {
     @Override
-    public List<Script> loadScripts(String path)
-    {
-        if (path == null)
-        {
+    public List<Script> loadScripts(String path) {
+        if (path == null) {
             return emptyList();
         }
 
-        try (Stream<Path> stream = Files.walk(Paths.get(path)))
-        {
+        try (Stream<Path> stream = Files.walk(Paths.get(path))) {
             return stream
                     .filter(scriptPath -> scriptPath.toString().endsWith(".py"))
                     .sorted()
                     .map(scriptPath -> (Script) new FilepathScript(scriptPath))
                     .toList();
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

@@ -22,8 +22,7 @@ import static java.awt.BorderLayout.SOUTH;
 import static javax.swing.JSplitPane.HORIZONTAL_SPLIT;
 import static javax.swing.JSplitPane.VERTICAL_SPLIT;
 
-public class WebSocketAttackPanel extends JPanel
-{
+public class WebSocketAttackPanel extends JPanel {
     private final UserInterface userInterface;
     private final AttackManager attackManager;
     private final AttackStatus attackStatus;
@@ -37,8 +36,7 @@ public class WebSocketAttackPanel extends JPanel
             AttackStatus attackStatus,
             PanelSwitcher panelSwitcher,
             WebSocketMessageTableModel tableModel
-    )
-    {
+    ) {
         super(new BorderLayout());
 
         this.userInterface = userInterface;
@@ -51,8 +49,7 @@ public class WebSocketAttackPanel extends JPanel
         initComponents();
     }
 
-    private void initComponents()
-    {
+    private void initComponents() {
         WebSocketMessageEditor webSocketMessageEditor = userInterface.createWebSocketMessageEditor(READ_ONLY);
         HttpRequestEditor upgradeRequestEditor = userInterface.createHttpRequestEditor(READ_ONLY);
 
@@ -79,17 +76,13 @@ public class WebSocketAttackPanel extends JPanel
         this.add(getHaltConfigureButton(), SOUTH);
     }
 
-    private Component getHaltConfigureButton()
-    {
+    private Component getHaltConfigureButton() {
         JButton haltConfigureButton = new JButton("Halt");
         haltConfigureButton.addActionListener(l -> {
-            if (attackStatus.isRunning())
-            {
+            if (attackStatus.isRunning()) {
                 attackManager.stopAttack();
                 haltConfigureButton.setText("Configure");
-            }
-            else
-            {
+            } else {
                 tableModel.clear();
 
                 haltConfigureButton.setText("Halt");

@@ -3,11 +3,12 @@ package ui;
 import attack.AttackManager;
 import attack.AttackStatus;
 import burp.api.montoya.ui.UserInterface;
-import config.FileLocationConfiguration;
+import config.ExtensionConfiguration;
 import data.InitialWebSocketMessage;
 import logger.Logger;
-import ui.attack.WebSocketAttackPanel;
+import ui.attack.TurboWebSocketAttackPanel;
 import ui.attack.table.WebSocketMessageTableModel;
+import ui.editor.AiManager;
 import ui.editor.WebSocketEditorPanel;
 
 import javax.swing.*;
@@ -16,8 +17,7 @@ import java.awt.*;
 import static burp.WebSocketFuzzer.EXTENSION_NAME;
 import static javax.swing.SwingUtilities.invokeLater;
 
-public class WebSocketFrame extends JFrame
-{
+public class WebSocketFrame extends JFrame {
     private static final String ATTACK_PANEL_NAME = "attackPanel";
     private static final String EDITOR_PANEL_NAME = "editorPanel";
     private static final double WIDTH_RATIO = 0.5;
@@ -26,12 +26,12 @@ public class WebSocketFrame extends JFrame
     WebSocketFrame(
             Logger logger,
             UserInterface userInterface,
-            FileLocationConfiguration fileLocationConfiguration,
+            AiManager aiManager,
+            ExtensionConfiguration extensionConfiguration,
             InitialWebSocketMessage webSocketMessage,
             WebSocketMessageTableModel webSocketMessageTableModel,
             AttackManager attackManager,
-            AttackStatus attackStatus)
-    {
+            AttackStatus attackStatus) {
         String titleString = EXTENSION_NAME + " - " + webSocketMessage.upgradeRequest().url();
 
         setTitle(titleString);
@@ -48,31 +48,28 @@ public class WebSocketFrame extends JFrame
         CardLayout cardLayout = new CardLayout();
         JPanel cardDeck = new JPanel(cardLayout);
 
-        PanelSwitcher panelSwitcher = new PanelSwitcher()
-        {
+        PanelSwitcher panelSwitcher = new PanelSwitcher() {
             @Override
-            public void showAttackPanel()
-            {
+            public void showAttackPanel() {
                 showPanel(ATTACK_PANEL_NAME);
             }
 
             @Override
-            public void showEditorPanel()
-            {
+            public void showEditorPanel() {
                 showPanel(EDITOR_PANEL_NAME);
             }
 
-            private void showPanel(String panelName)
-            {
+            private void showPanel(String panelName) {
                 invokeLater(() -> cardLayout.show(cardDeck, panelName));
             }
         };
 
         cardDeck.add(
                 new WebSocketEditorPanel(
+                        aiManager,
                         logger,
                         userInterface,
-                        fileLocationConfiguration,
+                        extensionConfiguration,
                         attackManager,
                         webSocketMessage,
                         panelSwitcher
@@ -81,7 +78,8 @@ public class WebSocketFrame extends JFrame
         );
 
         cardDeck.add(
-                new WebSocketAttackPanel(
+                new TurboWebSocketAttackPanel(
+                        logger,
                         userInterface,
                         attackManager,
                         attackStatus,

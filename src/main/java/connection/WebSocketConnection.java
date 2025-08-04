@@ -5,17 +5,21 @@ import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.websocket.WebSockets;
 import burp.api.montoya.websocket.extension.ExtensionWebSocket;
 import burp.api.montoya.websocket.extension.ExtensionWebSocketCreation;
-import data.AttackIdAndWebSocketConnectionMessage;
-import data.PendingMessages;
-import data.WebSocketConnectionMessage;
+import burp.api.montoya.websocket.extension.ExtensionWebSocketCreationStatus;
+import data.*;
 import logger.Logger;
 import logger.LoggerLevel;
+import socket.TurboConnectionPublisher;
 import utils.PayloadManipulator;
+
+import java.nio.charset.Charset;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static burp.api.montoya.websocket.Direction.CLIENT_TO_SERVER;
 
-public class WebSocketConnection implements Connection
-{
+public class WebSocketConnection implements Connection {
+    public final AtomicInteger inCount = new AtomicInteger(0);
+    public final AtomicInteger outCount = new AtomicInteger(0);
     private final Logger logger;
     private final WebSockets webSockets;
     private final PendingMessages pendingMessages;
@@ -23,73 +27,132 @@ public class WebSocketConnection implements Connection
     private final HttpRequest upgradeRequest;
     private final ExtensionWebSocket extensionWebSocket;
     private final PayloadManipulator payloadManipulator;
+    private ExtensionWebSocketCreation extensionWebSocketCreation;
 
     public WebSocketConnection(
             Logger logger,
             WebSockets webSockets,
             PendingMessages pendingMessages,
             int attackId,
-            HttpRequest upgradeRequest
-    )
-    {
+            HttpRequest upgradeRequest,
+            TurboConnectionPublisher publisher
+    ) throws Exception {
         this.logger = logger;
         this.webSockets = webSockets;
         this.pendingMessages = pendingMessages;
         this.attackId = attackId;
         this.upgradeRequest = upgradeRequest;
         this.payloadManipulator = new PayloadManipulator();
+        publisher.addSubscriber(this);
 
         extensionWebSocket = createExtensionWebSocket(upgradeRequest);
     }
 
     @Override
-    public void queue(String payload)
-    {
-        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new WebSocketConnectionMessage(payload, CLIENT_TO_SERVER, this)));
+    public int queue(String payload) {
+        int i = outCount.getAndIncrement();
+        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new WebSocketConnectionMessage(i, payload, CLIENT_TO_SERVER, this)));
+        return i;
     }
 
     @Override
-    public void queue(String payload, String replacement)
-    {
+    public int queue(byte[] payload) {
+        int i = outCount.getAndIncrement();
+        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new WebSocketConnectionMessage(i, new String(payload, Charset.defaultCharset()), CLIENT_TO_SERVER, this)));
+        return i;
+    }
+
+    @Override
+    public int queue(FrameType code, byte[] payload) {
+        int i = outCount.getAndIncrement();
+        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new WebSocketConnectionMessage(i, new String(payload, Charset.defaultCharset()), CLIENT_TO_SERVER, this)));
+        return i;
+    }
+
+    @Override
+    public int queue(FrameType code, byte[] payload, int length) {
+        int i = outCount.getAndIncrement();
+        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new WebSocketConnectionMessage(i, new String(payload, Charset.defaultCharset()), CLIENT_TO_SERVER, this)));
+        return i;
+    }
+
+    @Override
+    public int queue(FrameType code, byte[] payload, String length) {
+        int i = outCount.getAndIncrement();
+        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new WebSocketConnectionMessage(i, new String(payload, Charset.defaultCharset()), CLIENT_TO_SERVER, this)));
+        return i;
+    }
+
+    @Override
+    public int queue(String payload, String replacement) {
+        int i = outCount.getAndIncrement();
+        String newPayload = payloadManipulator.modify(payload, replacement);
+        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new WebSocketConnectionMessage(i, newPayload, CLIENT_TO_SERVER, this)));
+        return i;
+    }
+
+    @Override
+    public void queueWithComment(String payload, String comment) {
+        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new WebSocketConnectionMessage(outCount.getAndIncrement(), payload, CLIENT_TO_SERVER, comment, this)));
+    }
+
+    @Override
+    public void queueWithComment(String payload, String replacement, String comment) {
         String newPayload = payloadManipulator.modify(payload, replacement);
 
-        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new WebSocketConnectionMessage(newPayload, CLIENT_TO_SERVER, this)));
+        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new WebSocketConnectionMessage(outCount.getAndIncrement(), newPayload, CLIENT_TO_SERVER, comment, this)));
     }
 
     @Override
-    public void queueWithComment(String payload, String comment)
-    {
-        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new WebSocketConnectionMessage(payload, CLIENT_TO_SERVER, comment, this)));
+    public void sendMessage(ConnectionMessage message) {
+        extensionWebSocket.sendTextMessage(message.getMessage());
     }
 
     @Override
-    public void queueWithComment(String payload, String replacement, String comment)
-    {
-        String newPayload = payloadManipulator.modify(payload, replacement);
-
-        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new WebSocketConnectionMessage(newPayload, CLIENT_TO_SERVER, comment, this)));
-    }
-
-    @Override
-    public HttpRequest upgradeRequest()
-    {
+    public HttpRequest upgradeRequest() {
         return upgradeRequest;
     }
 
-    public void sendMessage(String payload)
-    {
-        extensionWebSocket.sendTextMessage(payload);
+    @Override
+    public ExtensionWebSocketCreationStatus status() {
+        return extensionWebSocketCreation.status();
     }
 
-    private ExtensionWebSocket createExtensionWebSocket(HttpRequest upgradeRequest)
-    {
+    @Override
+    public int decIn() {
+        return inCount.decrementAndGet();
+    }
+
+    @Override
+    public int decOut() {
+        return outCount.decrementAndGet();
+    }
+
+    @Override
+    public int incIn() {
+        return inCount.getAndIncrement();
+    }
+
+    @Override
+    public int incOut() {
+        return outCount.getAndIncrement();
+    }
+
+    @Override
+    public int in() {
+        return inCount.get();
+    }
+
+    @Override
+    public int out() {
+        return outCount.get();
+    }
+
+    private ExtensionWebSocket createExtensionWebSocket(HttpRequest upgradeRequest) throws Exception {
         ExtensionWebSocket extensionWebSocket;
 
-        ExtensionWebSocketCreation extensionWebSocketCreation = webSockets.createWebSocket(upgradeRequest);
-        logger.logOutput(LoggerLevel.DEBUG, "WebSocketConnection Upgrade request: " + upgradeRequest.toString());
-
-        if (extensionWebSocketCreation.webSocket().isPresent())
-        {
+        extensionWebSocketCreation = webSockets.createWebSocket(upgradeRequest);
+        if (extensionWebSocketCreation.webSocket().isPresent()) {
             extensionWebSocket = extensionWebSocketCreation.webSocket().get();
 
             extensionWebSocket.registerMessageHandler(
@@ -100,13 +163,18 @@ public class WebSocketConnection implements Connection
                             this // TODO
                     )
             );
-        }
-        else
-        {
-            logger.logError("Failed to create websocket connection");
-            extensionWebSocket = null;
+        } else {
+            logger.logOutput(LoggerLevel.UI, "Failed to create websocket connection: " + extensionWebSocketCreation.status());
+            throw new Exception("Failed to create websocket connection");
         }
 
         return extensionWebSocket;
+    }
+
+    public void close() {
+        if (extensionWebSocket != null) {
+            logger.logOutput(LoggerLevel.UI, "Connection was closed by server!");
+            extensionWebSocket.close();
+        }
     }
 }

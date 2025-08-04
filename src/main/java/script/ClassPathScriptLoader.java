@@ -11,22 +11,18 @@ import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 
-class ClassPathScriptLoader implements ScriptLoader
-{
+class ClassPathScriptLoader implements ScriptLoader {
     @Override
-    public List<Script> loadScripts(String path)
-    {
+    public List<Script> loadScripts(String path) {
         URL url = this.getClass().getResource(path);
 
-        if (url == null)
-        {
+        if (url == null) {
             return emptyList();
         }
 
         Stream<Path> stream = null;
 
-        try
-        {
+        try {
             URI uri = url.toURI();
 
             try (FileSystem fs = FileSystems.newFileSystem(uri, new HashMap<>())) {
@@ -38,14 +34,10 @@ class ClassPathScriptLoader implements ScriptLoader
                         .map(scriptPath -> (Script) new ClasspathScript(scriptPath))
                         .toList();
             }
-        } catch (IOException | URISyntaxException e)
-        {
+        } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
-        }
-        finally
-        {
-            if (stream != null)
-            {
+        } finally {
+            if (stream != null) {
                 stream.close();
             }
         }

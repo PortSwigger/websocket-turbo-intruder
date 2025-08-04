@@ -9,29 +9,23 @@ import java.io.UncheckedIOException;
 
 import static java.util.Locale.US;
 
-public enum IconType
-{
+public enum IconType {
     LEFT_ARROW("left_arrow"),
     RIGHT_ARROW("right_arrow");
 
     private final String name;
 
-    IconType(String name)
-    {
+    IconType(String name) {
         this.name = name;
     }
 
-    Image image(Theme theme)
-    {
+    Image image(Theme theme) {
         String path = "/media/%s_%s.png".formatted(name, theme.name().toLowerCase(US));
 
-        try
-        {
+        try {
             byte[] data = IconFactory.class.getResourceAsStream(path).readAllBytes();
             return new ImageIcon(data).getImage();
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }

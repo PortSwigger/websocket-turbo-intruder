@@ -1,6 +1,5 @@
 package attack;
 
-public interface AttackStopper
-{
+public interface AttackStopper {
     void stopAttack();
 }

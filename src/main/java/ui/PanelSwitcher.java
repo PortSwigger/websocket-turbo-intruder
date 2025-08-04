@@ -1,7 +1,6 @@
 package ui;
 
-public interface PanelSwitcher
-{
+public interface PanelSwitcher {
     void showAttackPanel();
 
     void showEditorPanel();

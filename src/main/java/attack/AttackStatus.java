@@ -1,7 +1,6 @@
 package attack;
 
-public interface AttackStatus
-{
+public interface AttackStatus {
     boolean isRunning();
 
     boolean isCurrentAttackId(int attackId);

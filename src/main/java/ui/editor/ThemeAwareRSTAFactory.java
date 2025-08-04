@@ -9,19 +9,16 @@ import javax.swing.text.JTextComponent;
 
 import static org.fife.ui.rsyntaxtextarea.SyntaxConstants.SYNTAX_STYLE_PYTHON;
 
-public class ThemeAwareRSTAFactory
-{
+public class ThemeAwareRSTAFactory {
     private final UserInterface userInterface;
     private final Logger logger;
 
-    public ThemeAwareRSTAFactory(UserInterface userInterface, Logger logger)
-    {
+    public ThemeAwareRSTAFactory(UserInterface userInterface, Logger logger) {
         this.userInterface = userInterface;
         this.logger = logger;
     }
 
-    RSyntaxTextArea build()
-    {
+    public RSyntaxTextArea build() {
         JTextComponent.removeKeymap("RTextAreaKeymap");
         UIManager.put("RTextAreaUI.inputMap", null);
         UIManager.put("RTextAreaUI.actionMap", null);

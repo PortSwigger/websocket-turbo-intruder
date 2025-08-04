@@ -1,8 +1,8 @@
 def queue_websockets(upgrade_request, message):
-    connection1 = websocket_connection.create(upgrade_request)
+    connection = websocket_connection.create(upgrade_request, Engine.TURBO)
 
     for i in range(10):
-        connection1.queue(message)
+        connection.queue(message, str(i))
 
 def handle_outgoing_message(websocket_message):
     results_table.add(websocket_message)

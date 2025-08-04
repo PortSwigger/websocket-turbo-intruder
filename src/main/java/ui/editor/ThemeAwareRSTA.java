@@ -8,16 +8,14 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import java.awt.*;
 import java.io.IOException;
 
-class ThemeAwareRSTA extends RSyntaxTextArea
-{
+class ThemeAwareRSTA extends RSyntaxTextArea {
     private static final String LIGHT = "/org/fife/ui/rsyntaxtextarea/themes/default.xml";
     private static final String DARK = "/org/fife/ui/rsyntaxtextarea/themes/dark.xml";
 
     private final UserInterface userInterface;
     private final Logger logger;
 
-    ThemeAwareRSTA(UserInterface userInterface, Logger logger, int rows, int columns)
-    {
+    ThemeAwareRSTA(UserInterface userInterface, Logger logger, int rows, int columns) {
         super(rows, columns);
 
         this.userInterface = userInterface;
@@ -27,21 +25,17 @@ class ThemeAwareRSTA extends RSyntaxTextArea
     }
 
     @Override
-    public void updateUI()
-    {
+    public void updateUI() {
         super.updateUI();
         applyThemeAndFont();
     }
 
-    private void applyThemeAndFont()
-    {
-        if (userInterface == null)
-        {
+    private void applyThemeAndFont() {
+        if (userInterface == null) {
             return;
         }
 
-        try
-        {
+        try {
             String themePath = userInterface.currentTheme() == Theme.LIGHT ? LIGHT : DARK;
 
             org.fife.ui.rsyntaxtextarea.Theme rSyntaxTextAreaTheme = org.fife.ui.rsyntaxtextarea.Theme.load(getClass().getResourceAsStream(themePath));
@@ -49,9 +43,7 @@ class ThemeAwareRSTA extends RSyntaxTextArea
 
             Font font = userInterface.currentEditorFont();
             setFont(font);
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             logger.logError("Unable to apply themes.");
         }
     }

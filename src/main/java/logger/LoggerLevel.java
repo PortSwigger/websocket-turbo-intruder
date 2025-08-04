@@ -1,7 +1,7 @@
 package logger;
 
-public enum LoggerLevel
-{
+public enum LoggerLevel {
     DEFAULT,
-    DEBUG
+    DEBUG,
+    UI
 }

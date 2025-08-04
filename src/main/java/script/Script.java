@@ -1,6 +1,5 @@
 package script;
 
-public interface Script
-{
+public interface Script {
     String content();
 }

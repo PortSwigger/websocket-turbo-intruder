@@ -11,6 +11,10 @@ public class FakeRange implements Range {
         this.end = end;
     }
 
+    public static Range rangeOf(int start, int end) {
+        return new FakeRange(start, end);
+    }
+
     @Override
     public int startIndexInclusive() {
         return start;
@@ -22,8 +26,7 @@ public class FakeRange implements Range {
     }
 
     @Override
-    public boolean contains(int i)
-    {
+    public boolean contains(int i) {
         throw new UnsupportedOperationException();
     }
 
@@ -47,10 +50,5 @@ public class FakeRange implements Range {
                 "start=" + start +
                 ", end=" + end +
                 '}';
-    }
-
-    public static Range rangeOf(int start, int end)
-    {
-        return new FakeRange(start, end);
     }
 }
