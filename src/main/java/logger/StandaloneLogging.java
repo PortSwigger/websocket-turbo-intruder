@@ -41,6 +41,9 @@ public class StandaloneLogging implements Logging {
     }
 
     @Override
+    public void logToOutput(Object o) {}
+
+    @Override
     public void logToError(String message) {
         errorStream.println(message);
     }

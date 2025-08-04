@@ -3,7 +3,7 @@ package ui;
 import attack.AttackManager;
 import attack.AttackStatus;
 import burp.api.montoya.ui.UserInterface;
-import config.FileLocationConfiguration;
+import config.ExtensionConfiguration;
 import data.InitialWebSocketMessage;
 import logger.Logger;
 import ui.attack.TurboWebSocketAttackPanel;
@@ -27,7 +27,7 @@ public class WebSocketFrame extends JFrame {
             Logger logger,
             UserInterface userInterface,
             AiManager aiManager,
-            FileLocationConfiguration fileLocationConfiguration,
+            ExtensionConfiguration extensionConfiguration,
             InitialWebSocketMessage webSocketMessage,
             WebSocketMessageTableModel webSocketMessageTableModel,
             AttackManager attackManager,
@@ -69,7 +69,7 @@ public class WebSocketFrame extends JFrame {
                         aiManager,
                         logger,
                         userInterface,
-                        fileLocationConfiguration,
+                        extensionConfiguration,
                         attackManager,
                         webSocketMessage,
                         panelSwitcher
@@ -79,6 +79,7 @@ public class WebSocketFrame extends JFrame {
 
         cardDeck.add(
                 new TurboWebSocketAttackPanel(
+                        logger,
                         userInterface,
                         attackManager,
                         attackStatus,

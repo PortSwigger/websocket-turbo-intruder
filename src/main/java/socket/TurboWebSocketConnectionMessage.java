@@ -22,9 +22,9 @@ public class TurboWebSocketConnectionMessage implements ConnectionMessage {
     private final LocalDateTime dateTime;
     private final Connection connection;
     private final long length;
-    private long id;
+    private final long id;
+    private final FrameType code;
     private long hash;
-    private int code;
     private String comment;
     private long time;
     private boolean interesting;
@@ -45,15 +45,14 @@ public class TurboWebSocketConnectionMessage implements ConnectionMessage {
     }
 
     public TurboWebSocketConnectionMessage(long id, String message, Direction direction, String comment, LocalDateTime dateTime, Connection connection) {
-        this(id, FrameType.TEXT.value, ByteBuffer.wrap(message.getBytes(Charset.defaultCharset())), direction, comment, dateTime, connection);
+        this(id, FrameType.TEXT, ByteBuffer.wrap(message.getBytes(Charset.defaultCharset())), direction, comment, dateTime, connection);
     }
 
-    public TurboWebSocketConnectionMessage(long id, int code, ByteBuffer message, Direction direction, String comment, LocalDateTime dateTime, Connection connection) {
+    public TurboWebSocketConnectionMessage(long id, FrameType code, ByteBuffer message, Direction direction, String comment, LocalDateTime dateTime, Connection connection) {
         this(id, code, message, direction, comment, dateTime, connection, message.array().length);
     }
 
-    // TODO calculate real time
-    public TurboWebSocketConnectionMessage(long id, int code, ByteBuffer message, Direction direction, String comment, LocalDateTime dateTime, Connection connection, long length) {
+    public TurboWebSocketConnectionMessage(long id, FrameType code, ByteBuffer message, Direction direction, String comment, LocalDateTime dateTime, Connection connection, long length) {
         this.hash = id;
         this.id = id;
         this.code = code;
@@ -141,24 +140,24 @@ public class TurboWebSocketConnectionMessage implements ConnectionMessage {
     }
 
     @Override
-    public int getCode() {
+    public FrameType getCode() {
         return code;
     }
 
-    @Override
-    public void setAttributes(Map<WebSocketAttributeType, Integer> attributes) {
-        this.attributes = attributes;
-    }
+//    @Override
+//    public void setAttributes(Map<WebSocketAttributeType, Integer> attributes) {
+//        this.attributes = attributes;
+//    }
 
-    @Override
-    public int getWordCount() {
-        return this.attributes.getOrDefault(WebSocketAttributeType.WORD_COUNT, 0);
-    }
+//    @Override
+//    public int getWordCount() {
+//        return this.attributes.getOrDefault(WebSocketAttributeType.SPACE_COUNT, 0);
+//    }
 
-    @Override
-    public int getKeyCount() {
-        return this.attributes.getOrDefault(WebSocketAttributeType.KEY_COUNT, 0);
-    }
+//    @Override
+//    public int getKeyCount() {
+//        return this.attributes.getOrDefault(WebSocketAttributeType.KEY_COUNT, 0);
+//    }
 
     @Override
     public boolean isInteresting() {

@@ -1,11 +1,11 @@
 package connection;
 
 import burp.api.montoya.http.message.requests.HttpRequest;
-import burp.api.montoya.websocket.Direction;
 import burp.api.montoya.websocket.extension.ExtensionWebSocket;
 import burp.api.montoya.websocket.extension.ExtensionWebSocketCreationStatus;
 import data.AttackIdAndWebSocketConnectionMessage;
 import data.ConnectionMessage;
+import data.FrameType;
 import data.PendingMessages;
 import logger.Logger;
 import logger.LoggerLevel;
@@ -26,10 +26,11 @@ import static burp.api.montoya.websocket.Direction.CLIENT_TO_SERVER;
 import static java.lang.Thread.sleep;
 import static java.time.LocalDateTime.now;
 
-public class ThreadedTurboWebSocketConnection implements Connection, TurboWebSocketInterface {
+public class ThreadedTurboWebSocketConnection implements Connection {
     private static final int DEFAULT_INTERVAL = 10;
     public final BlockingQueue<ConnectionMessage> outQueue;
-    //    public final AtomicInteger outCounter = new AtomicInteger(0);
+    private final AtomicInteger inCount = new AtomicInteger(0);
+    private final AtomicInteger outCount = new AtomicInteger(0);
     private final Logger logger;
     private final PendingMessages pendingMessages;
     private final int attackId;
@@ -39,9 +40,7 @@ public class ThreadedTurboWebSocketConnection implements Connection, TurboWebSoc
     private final PayloadManipulator payloadManipulator;
     private final List<TurboExtensionWebSocket> webSocketPool = new CopyOnWriteArrayList<>();
     private final TurboThreadExecutor senderExecutor;
-    // For simple round-robin, keep a counter
     private final AtomicInteger roundRobinIndex = new AtomicInteger(0);
-    private final AtomicInteger outCounter = new AtomicInteger(0);
     private final CounterMap counterMap;
     private boolean running;
 
@@ -50,7 +49,7 @@ public class ThreadedTurboWebSocketConnection implements Connection, TurboWebSoc
             PendingMessages pendingMessages,
             int attackId,
             HttpRequest upgradeRequest,
-            TurboWebSocketMessagePublisher publisher,
+            TurboConnectionPublisher publisher,
             TurboConfig config
     ) throws Exception {
         this.logger = logger;
@@ -67,6 +66,161 @@ public class ThreadedTurboWebSocketConnection implements Connection, TurboWebSoc
         publisher.addSubscriber(this);
         createMultipleConnections(config.nThreads());
         startMessageDispatchers(config.nThreads());
+    }
+
+    @Override
+    public int queue(String payload) {
+        int i = outCount.getAndIncrement();
+        pendingMessages.accept(
+                new AttackIdAndWebSocketConnectionMessage(attackId,
+                        new TurboWebSocketConnectionMessage(
+                                i,
+                                payload,
+                                CLIENT_TO_SERVER,
+                                this)));
+        return i;
+    }
+
+    @Override
+    public int queue(byte[] payload) {
+        int i = outCount.getAndIncrement();
+        pendingMessages.accept(
+                new AttackIdAndWebSocketConnectionMessage(attackId,
+                        new TurboWebSocketConnectionMessage(
+                                i,
+                                FrameType.TEXT,
+                                ByteBuffer.wrap(payload),
+                                CLIENT_TO_SERVER,
+                                null,
+                                now(),
+                                this,
+                                payload.length)));
+        return i;
+    }
+
+    @Override
+    public int queue(FrameType code, byte[] payload) {
+        int i = outCount.getAndIncrement();
+        pendingMessages.accept(
+                new AttackIdAndWebSocketConnectionMessage(attackId,
+                        new TurboWebSocketConnectionMessage(
+                                i,
+                                code,
+                                ByteBuffer.wrap(payload),
+                                CLIENT_TO_SERVER,
+                                null,
+                                now(),
+                                this,
+                                payload.length)));
+        return i;
+    }
+
+    @Override
+    public int queue(FrameType code, byte[] payload, int length) {
+        int i = outCount.getAndIncrement();
+        pendingMessages.accept(
+                new AttackIdAndWebSocketConnectionMessage(attackId,
+                        new TurboWebSocketConnectionMessage(
+                                i,
+                                code,
+                                ByteBuffer.wrap(payload),
+                                CLIENT_TO_SERVER,
+                                null,
+                                now(),
+                                this,
+                                length)));
+        return i;
+    }
+
+    @Override
+    public int queue(FrameType code, byte[] payload, String length) {
+        int i = outCount.getAndIncrement();
+        pendingMessages.accept(
+                new AttackIdAndWebSocketConnectionMessage(attackId,
+                        new TurboWebSocketConnectionMessage(
+                                i,
+                                code,
+                                ByteBuffer.wrap(payload),
+                                CLIENT_TO_SERVER,
+                                null,
+                                now(),
+                                this,
+                                Long.parseLong(length))));
+        return i;
+    }
+
+    @Override
+    public int queue(String payload, String replacement) {
+        int i = outCount.getAndIncrement();
+        String newPayload = payloadManipulator.modify(payload, replacement);
+        pendingMessages.accept(
+                new AttackIdAndWebSocketConnectionMessage(attackId,
+                        new TurboWebSocketConnectionMessage(
+                                i,
+                                newPayload,
+                                CLIENT_TO_SERVER,
+                                this)));
+        return i;
+    }
+
+    @Override
+    public void queueWithComment(String payload, String comment) {
+        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new TurboWebSocketConnectionMessage(outCount.getAndIncrement(), payload, CLIENT_TO_SERVER, comment, this)));
+    }
+
+    @Override
+    public void queueWithComment(String payload, String replacement, String comment) {
+        String newPayload = payloadManipulator.modify(payload, replacement);
+
+        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new TurboWebSocketConnectionMessage(outCount.getAndIncrement(), newPayload, CLIENT_TO_SERVER, comment, this)));
+    }
+
+    @Override
+    public void sendMessage(ConnectionMessage message) {
+        outQueue.add(message);
+    }
+
+    @Override
+    public HttpRequest upgradeRequest() {
+        return upgradeRequest;
+    }
+
+    @Override
+    public ExtensionWebSocketCreationStatus status() {
+        boolean success = webSocketPool.stream().allMatch(
+                c -> c.getStatus() == ExtensionWebSocketCreationStatus.SUCCESS);
+        return success ? ExtensionWebSocketCreationStatus.SUCCESS : ExtensionWebSocketCreationStatus.CONNECTION_FAILED;
+    }
+
+    // it is done for a reason
+    @Override
+    public int decIn() {
+        return inCount.incrementAndGet();
+    }
+
+    @Override
+    public int decOut() {
+        return outCount.decrementAndGet();
+    }
+
+    @Override
+    public int incIn() {
+        return inCount.decrementAndGet();
+    }
+
+    @Override
+    public int incOut() {
+        return outCount.incrementAndGet();
+    }
+
+    @Override
+    public int in() {
+        return inCount.get();
+    }
+
+    @Override
+    public int out() {
+        return outCount.get();
     }
 
     private void createMultipleConnections(int poolSize) {
@@ -87,34 +241,26 @@ public class ThreadedTurboWebSocketConnection implements Connection, TurboWebSoc
             senderExecutor.submitTask(() -> {
                 while (running && !Thread.currentThread().isInterrupted()) {
                     try {
-                        // If no websockets available, log or handle accordingly
                         if (webSocketPool.isEmpty()) {
                             continue;
                         }
 
-                        // Round-robin index for picking a WebSocket
                         int index = roundRobinIndex.getAndUpdate(
                                 val -> (val + 1) % webSocketPool.size()
                         );
 
                         TurboExtensionWebSocket socket = webSocketPool.get(index);
 
-                        // Take the next message to send
                         ConnectionMessage nextMsg = outQueue.poll();
                         if (nextMsg == null) continue;
                         nextMsg.setHash(Utilities.generateID(index + 1, counterMap.getAndIncrement(index)));
 
-//                        ByteArray arr = ByteArray.byteArray(nextMsg.getCode())
-//                                .withAppended(ByteBuffer.allocate(Long.BYTES).putLong(nextMsg.getPayloadLength()).array())
-//                                .withAppended(nextMsg.getMessageByteBuffer().array());
                         ByteBuffer arr = ByteBuffer.allocate(1 + Long.BYTES + nextMsg.getMessageByteBuffer().remaining())
-                                .put((byte) nextMsg.getCode())
+                                .put((byte) nextMsg.getCode().value)
                                 .putLong(nextMsg.getPayloadLength())
                                 .put(nextMsg.getMessageByteBuffer().duplicate());
                         arr.flip();
-                        // Attempt to send
-                        sendInternal(socket, arr);
-//                        int interval = config.sendingInterval() <= 0 ? 10 : config.sendingInterval() / webSocketPool.size();
+                        socket.sendByteBuffer(arr);
                         sleep(DEFAULT_INTERVAL);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
@@ -126,78 +272,6 @@ public class ThreadedTurboWebSocketConnection implements Connection, TurboWebSoc
                 }
             });
         }
-    }
-
-    private void sendInternal(TurboExtensionWebSocket socket, String payload) {
-        socket.sendTextMessage(payload);
-    }
-
-    private void sendInternal(TurboExtensionWebSocket socket, ByteBuffer payload) {
-        socket.sendByteBuffer(payload);
-    }
-
-    @Override
-    public void queue(String payload) {
-        queue(outCounter.getAndIncrement(), payload, CLIENT_TO_SERVER);
-    }
-
-    @Override
-    public void queue(int code, byte[] payload) {
-        queue(code, payload, (long) payload.length);
-    }
-
-    @Override
-    public void queue(int code, byte[] payload, int length) {
-        queue(code, payload, (long) length);
-    }
-
-    @Override
-    public void queue(int code, byte[] payload, String length) {
-        queue(code, payload, Long.parseLong(length));
-    }
-
-    private void queue(int id, String payload, Direction direction) {
-        queueInternal(new TurboWebSocketConnectionMessage(id, payload, direction, this));
-    }
-
-    private void queue(int code, byte[] payload, Long length) {
-        queueInternal(new TurboWebSocketConnectionMessage(
-                outCounter.getAndIncrement(), code, ByteBuffer.wrap(payload), CLIENT_TO_SERVER, null,
-                now(), this, length));
-    }
-
-    private void queueInternal(TurboWebSocketConnectionMessage message) {
-        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, message));
-    }
-
-
-    @Override
-    public void queue(String payload, String replacement) {
-        String newPayload = payloadManipulator.modify(payload, replacement);
-
-        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new TurboWebSocketConnectionMessage(outCounter.getAndIncrement(), newPayload, CLIENT_TO_SERVER, this)));
-    }
-
-    @Override
-    public void queueWithComment(String payload, String comment) {
-        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new TurboWebSocketConnectionMessage(outCounter.getAndIncrement(), payload, CLIENT_TO_SERVER, comment, this)));
-    }
-
-    @Override
-    public void queueWithComment(String payload, String replacement, String comment) {
-        String newPayload = payloadManipulator.modify(payload, replacement);
-
-        pendingMessages.accept(new AttackIdAndWebSocketConnectionMessage(attackId, new TurboWebSocketConnectionMessage(outCounter.getAndIncrement(), newPayload, CLIENT_TO_SERVER, comment, this)));
-    }
-
-    @Override
-    public void sendMessage(ConnectionMessage message) {
-        outQueue.add(message);
-    }
-
-    @Override
-    public HttpRequest upgradeRequest() {
-        return upgradeRequest;
     }
 
     private TurboExtensionWebSocket createExtensionWebSocket(HttpRequest upgradeRequest, int id) throws Exception {
@@ -221,17 +295,7 @@ public class ThreadedTurboWebSocketConnection implements Connection, TurboWebSoc
         return extWS;
     }
 
-    @Override
-    public boolean isOpen() {
-        return !(webSocketPool.isEmpty());
-    }
-
-    @Override
-    public ExtensionWebSocketCreationStatus status() {
-        return ExtensionWebSocketCreationStatus.SUCCESS;
-    }
-
-    public void stop() {
+    public void close() {
         this.running = false;
         // Close websockets
         for (TurboExtensionWebSocket socket : webSocketPool) {

@@ -152,7 +152,7 @@ public class TurboEngine {
     public void processClose(FrameData frame) {
         String status = decodeWebSocketCloseFrame(frame.getPayload());
         webSocket.textMessageReceived(outCounter.getAndIncrement(), frame.getPayload(), status);
-        throw new IllegalArgumentException("Connection was closed by server! "
+        throw new IllegalArgumentException("Connection was closed by server! Status: "
                 + status);
     }
 

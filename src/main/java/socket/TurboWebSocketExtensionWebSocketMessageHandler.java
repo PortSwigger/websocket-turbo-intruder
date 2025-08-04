@@ -54,7 +54,7 @@ public class TurboWebSocketExtensionWebSocketMessageHandler implements Extension
                 new AttackIdAndWebSocketConnectionMessage(
                         attackId,
                         new TurboWebSocketConnectionMessage(
-                                Utilities.generateID(ID, id),
+                                Utilities.generateID(ID, id - connection.in()),
                                 textMessage.payload(),
                                 textMessage.direction(),
                                 comment,
@@ -68,5 +68,10 @@ public class TurboWebSocketExtensionWebSocketMessageHandler implements Extension
     @Override
     public void binaryMessageReceived(BinaryMessage binaryMessage) {
         logger.logError("Unhandled binary message received");
+    }
+
+    @Override
+    public void onClose() {
+        connection.close();
     }
 }

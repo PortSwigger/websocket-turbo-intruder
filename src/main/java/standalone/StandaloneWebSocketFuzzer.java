@@ -4,13 +4,14 @@ import attack.AttackManager;
 import attack.AttackScriptExecutor;
 import attack.AttackState;
 import data.AttackDetails;
+import data.ConnectionMessage;
 import data.MessagesToDisplay;
 import data.PendingMessages;
 import logger.Logger;
 import logger.StandaloneLogging;
 import python.ConnectionFactoryFactory;
 import socket.TurboConfig;
-import socket.TurboWebSocketMessagePublisher;
+import socket.TurboConnectionPublisher;
 import socket.TurboWebSockets;
 
 import java.io.IOException;
@@ -26,7 +27,7 @@ public class StandaloneWebSocketFuzzer {
             logger.setDebugLogLevel(parsedArgs.debug());
 
             AttackState attackState = new AttackState();
-            TurboWebSocketMessagePublisher publisher = new TurboWebSocketMessagePublisher();
+            TurboConnectionPublisher publisher = new TurboConnectionPublisher();
             int availableCores = Runtime.getRuntime().availableProcessors() > 1 ? 2 : 1;
             TurboWebSockets webSockets = new TurboWebSockets(logger, new TurboConfig());
 
@@ -48,10 +49,13 @@ public class StandaloneWebSocketFuzzer {
 
             StandaloneWebSocketMessageModel model = new StandaloneWebSocketMessageModel(logger, parsedArgs.logFilePath());
 
+            Consumer<ConnectionMessage> historyConsumer = msg -> {
+            };
             AttackManager attackManager = new AttackManager(
                     logger,
                     pendingMessages,
                     messagesToDisplay,
+                    historyConsumer,
                     model::add,
                     scriptExecutor,
                     attackState
@@ -65,13 +69,13 @@ public class StandaloneWebSocketFuzzer {
             );
 
             attackManager.startAttack(attackDetails);
-            Consumer<String> progress = new Consumer<String>() {
-                @Override
-                public void accept(String message) {
+//            Consumer<String> progress = new Consumer<String>() {
+//                @Override
+//                public void accept(String message) {
 //                    logger.raiseInfoEvent(message);
-                }
-            };
-            attackManager.registerProgressListener(progress);
+//                }
+//            };
+//            attackManager.registerProgressListener(progress);
 
             Scanner s = new Scanner(System.in);
             System.out.println("Press enter to stop...");

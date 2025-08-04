@@ -3,13 +3,17 @@ package ui.attack.table;
 import burp.api.montoya.ui.UserInterface;
 import burp.api.montoya.websocket.Direction;
 import data.ConnectionMessage;
+import ui.editor.IconTextField;
 import utils.IconFactory;
 import utils.Pair;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.util.function.Consumer;
 
@@ -30,6 +34,52 @@ public class TurboWebSocketMessageTable extends JPanel {
 
         JTable webSocketMessageTable = new PercentageBasedColumnWidthTable(AttackTableColumns.columnWidthPercentages());
         webSocketMessageTable.setModel(webSocketMessageTableModel);
+        // experiment
+        webSocketMessageTable.setAutoCreateRowSorter(true);
+        TableRowSorter<WebSocketMessageTableModel> sorter = new TableRowSorter<>(webSocketMessageTableModel);
+        webSocketMessageTable.setRowSorter(sorter);
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        IconTextField searchField = new IconTextField("Search");
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            private void update() {
+                String text = searchField.getText().trim().toLowerCase();
+                if (text.isEmpty()) {
+                    sorter.setRowFilter(null);
+                } else {
+                    sorter.setRowFilter(new RowFilter<>() {
+                        @Override
+                        public boolean include(Entry<? extends WebSocketMessageTableModel, ? extends Integer> entry) {
+                            // entry.getIdentifier() is the model‐row index
+                            int modelRow = entry.getIdentifier();
+                            WebSocketMessageTableModel model = entry.getModel();
+                            ConnectionMessage msg = model.get(modelRow);
+                            if (msg == null) return false;
+                            if (msg.getMessage() != null) {
+                                return msg.getMessage().toLowerCase().contains(text);
+                            }
+                            if (msg.getComment() != null) {
+                                return msg.getComment().toLowerCase().contains(text);
+                            }
+                            return false;
+                        }
+                    });
+                }
+            }
+
+            public void insertUpdate(DocumentEvent e) {
+                update();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                update();
+            }
+
+            public void changedUpdate(DocumentEvent e) {
+                update();
+            }
+        });
+        searchPanel.add(searchField);
+
         webSocketMessageTable.setSelectionMode(SINGLE_SELECTION);
 
         webSocketMessageTable.setDefaultRenderer(Direction.class, new DirectionCellRenderer(iconFactory));
@@ -47,11 +97,14 @@ public class TurboWebSocketMessageTable extends JPanel {
             if (e.getValueIsAdjusting()) {
                 return;
             }
+            int selectedViewIndex = selectionModel.getMaxSelectionIndex();
+            if (selectedViewIndex >= 0) {
+                int selectedModelIndex = webSocketMessageTable.convertRowIndexToModel(selectedViewIndex);
+                Pair<ConnectionMessage, ConnectionMessage> webSocketConnectionMessage = webSocketMessageTableModel.getPair(selectedModelIndex);
 
-            Pair<ConnectionMessage, ConnectionMessage> webSocketConnectionMessage = webSocketMessageTableModel.getPair(selectionModel.getMaxSelectionIndex());
-
-            if (webSocketConnectionMessage != null) {
-                selectedMessageConsumer.accept(webSocketConnectionMessage);
+                if (webSocketConnectionMessage != null) {
+                    selectedMessageConsumer.accept(webSocketConnectionMessage);
+                }
             }
         });
 
@@ -64,6 +117,11 @@ public class TurboWebSocketMessageTable extends JPanel {
 
         JScrollPane scrollPane = new JScrollPane(webSocketMessageTable);
 
+        // experiment
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 10));
+        topPanel.add(searchPanel, BorderLayout.EAST);
+        this.add(topPanel, BorderLayout.NORTH);
         this.add(scrollPane, BorderLayout.CENTER);
     }
 

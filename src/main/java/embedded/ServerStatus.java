@@ -2,23 +2,23 @@ package embedded;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class EmbeddedServerState implements EmbeddedServerStatus {
+public class ServerStatus {
     private final AtomicBoolean isRunning;
 
-    public EmbeddedServerState() {
+    public ServerStatus() {
         isRunning = new AtomicBoolean();
     }
 
-    @Override
     public boolean isRunning() {
         return isRunning.get();
     }
 
-    public void startServer() {
+    public void start() {
         isRunning.set(true);
     }
 
-    void stopServer() {
+    public void stop() {
         isRunning.set(false);
     }
+
 }

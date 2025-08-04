@@ -3,6 +3,7 @@ package data;
 import attack.AttackStatus;
 import burp.api.montoya.websocket.Direction;
 import logger.Logger;
+import utils.Utilities;
 
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -16,11 +17,12 @@ public class PendingMessages implements Consumer<AttackIdAndWebSocketConnectionM
 {
     private final ConcurrentHashMap<Long, ConnectionMessage> unprocessedTimeQueue;
     private final BlockingQueue<ConnectionMessage> unprocessedMessageQueue;
-    private final BlockingQueue<SafeResponseAttributes> baselineMessageQueue;
+//    private final BlockingQueue<SafeResponseAttributes> baselineMessageQueue;
     private final Logger logger;
     private final AttackStatus attackStatus;
     private final AtomicInteger lastOut = new AtomicInteger(0);
     private final AtomicInteger lastIn = new AtomicInteger(0);
+    private final CustomWSMessageGroup messageGroup;
     private Consumer<String> listener;
     private long lastHash;
 
@@ -29,7 +31,8 @@ public class PendingMessages implements Consumer<AttackIdAndWebSocketConnectionM
         this.logger = logger;
         this.attackStatus = attackStatus;
         this.unprocessedMessageQueue = new LinkedBlockingQueue<>();
-        this.baselineMessageQueue = new LinkedBlockingQueue<>();
+//        this.baselineMessageQueue = new LinkedBlockingQueue<>();
+        this.messageGroup = new CustomWSMessageGroup(Utilities::calculateFingerprint);
     }
 
     private void progressBar(ConnectionMessage message) {
@@ -38,7 +41,8 @@ public class PendingMessages implements Consumer<AttackIdAndWebSocketConnectionM
                 lastOut.get(),
                 lastHash,
                 message.getMessageLength(),
-                message.getWordCount(),
+                0,
+//                message.getWordCount(),
                 message.getTime(),
                 message.getDateTime());
         if (listener != null) listener.accept(progress.toString());
@@ -59,6 +63,10 @@ public class PendingMessages implements Consumer<AttackIdAndWebSocketConnectionM
         }
     }
 
+    private boolean shouldProcess(ConnectionMessage message) {
+        return messageGroup.getFirstMessage() == null || !messageGroup.matches(message);
+    }
+
     private ConnectionMessage updateMessage(ConnectionMessage message) {
         if (message.getDirection() == Direction.CLIENT_TO_SERVER) {
             lastIn.incrementAndGet();
@@ -67,15 +75,31 @@ public class PendingMessages implements Consumer<AttackIdAndWebSocketConnectionM
             lastOut.incrementAndGet();
             lastHash = message.getId();
             hasMessageInQueue(message);
-            SafeResponseAttributes baseMessage = new SafeResponseAttributes(message);
-            message.setAttributes(baseMessage.getAttributes());
-            if (!baselineMessageQueue.contains(baseMessage)) {
-                baselineMessageQueue.add(baseMessage);
+            if (shouldProcess(message)) {
                 message.setInteresting(true);
+//                message.setComment(messageGroup.describeDiff(message));
+                messageGroup.add(message);
             }
         }
         return message;
     }
+//    private ConnectionMessage updateMessage(ConnectionMessage message) {
+//        if (message.getDirection() == Direction.CLIENT_TO_SERVER) {
+//            lastIn.incrementAndGet();
+//            unprocessedTimeQueue.put(message.getId(), message);
+//        } else {
+//            lastOut.incrementAndGet();
+//            lastHash = message.getId();
+//            hasMessageInQueue(message);
+//            SafeResponseAttributes baseMessage = new SafeResponseAttributes(message);
+//            message.setAttributes(baseMessage.getAttributes());
+//            if (!baselineMessageQueue.contains(baseMessage)) {
+//                baselineMessageQueue.add(baseMessage);
+//                message.setInteresting(true);
+//            }
+//        }
+//        return message;
+//    }
 
     @Override
     public void accept(AttackIdAndWebSocketConnectionMessage attackIdAndWebSocketConnectionMessage) {
@@ -102,7 +126,8 @@ public class PendingMessages implements Consumer<AttackIdAndWebSocketConnectionM
     public void clear() {
         unprocessedTimeQueue.clear();
         unprocessedMessageQueue.clear();
-        baselineMessageQueue.clear();
+//        baselineMessageQueue.clear();
+        messageGroup.reset();
         lastIn.set(0);
         lastOut.set(0);
     }

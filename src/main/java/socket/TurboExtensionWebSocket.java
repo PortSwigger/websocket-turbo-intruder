@@ -11,7 +11,7 @@ import data.FrameData;
 import logger.Logger;
 import logger.LoggerLevel;
 import standalone.TurboHttpResponse;
-import turbo.RawException;
+import turbo.TurboRuntimeException;
 import turbo.TurboThreadExecutor;
 import utils.Utilities;
 
@@ -35,6 +35,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static java.lang.Thread.sleep;
+import static utils.Utilities.INITIAL_MESSAGE;
 import static utils.Utilities.encodeFrame;
 
 public class TurboExtensionWebSocket implements ExtensionWebSocket {
@@ -67,7 +68,7 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
     private TurboWebSocketExtensionWebSocketMessageHandler messageHandler;
 
     public TurboExtensionWebSocket(String host, int port, boolean isSecure, byte[] handshake, Logger logger, TurboConfig config)
-            throws RawException {
+            throws TurboRuntimeException {
         this.host = host;
         this.port = port;
         this.isSecure = isSecure;
@@ -92,14 +93,14 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
 
         } catch (IllegalArgumentException exception) {
             this.status = ExtensionWebSocketCreationStatus.INVALID_HOST;
-            throw new RawException(exception.getMessage());
+            throw new TurboRuntimeException(exception.getMessage());
         } catch (IOException exception) {
             this.status = ExtensionWebSocketCreationStatus.CONNECTION_FAILED;
-            throw new RawException(exception.getMessage());
+            throw new TurboRuntimeException(exception.getMessage());
         }
     }
 
-    private void initializeSocket(boolean reconnect) throws IOException, SocketTimeoutException, IllegalArgumentException {
+    private void initializeSocket(boolean reconnect) throws IOException, IllegalArgumentException {
         // If not reconnecting, or if socket is null/closed, create a fresh socket
         if (socket == null || reconnect || socket.isClosed()) {
             socket = new Socket();
@@ -119,7 +120,7 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
         ostream = socket.getOutputStream();
     }
 
-    private void configureSocket() throws IOException, SocketTimeoutException, IllegalArgumentException {
+    private void configureSocket() throws IOException, IllegalArgumentException {
         socket.setTcpNoDelay(true);
         socket.setReuseAddress(true);
         if (!socket.isConnected()) {
@@ -177,7 +178,7 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
         }
 
         if (upgradeSuccessful) {
-            this.status = ExtensionWebSocketCreationStatus.STREAMING_RESPONSE;
+            this.status = ExtensionWebSocketCreationStatus.SUCCESS;
         } else {
             logger.logOutput(LoggerLevel.UI, "NON UPGRADE RESPONSE:\n" + sbResponse);
             this.status = ExtensionWebSocketCreationStatus.NON_UPGRADE_RESPONSE;
@@ -334,7 +335,7 @@ public class TurboExtensionWebSocket implements ExtensionWebSocket {
                 List<FrameData> unprocessed = new ArrayList<>();
                 queue.drainTo(unprocessed);
                 for (FrameData d : unprocessed) {
-                    textMessageReceived(-1, d.getPayload(), "Initial message");
+                    textMessageReceived(-1, d.getPayload(), INITIAL_MESSAGE);
                 }
                 textMessageReceived(engine.outCounter.getAndIncrement(), data.getPayload(), "");
             } else {

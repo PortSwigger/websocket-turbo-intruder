@@ -5,6 +5,7 @@ import burp.api.montoya.websocket.extension.ExtensionWebSocketCreationStatus;
 import ui.attack.table.PercentageBasedColumnWidthTable;
 
 import javax.swing.*;
+import javax.swing.event.TableModelEvent;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
@@ -26,6 +27,15 @@ public class WrappedConnectionTable extends JPanel {
         JTable connectionTable = new PercentageBasedColumnWidthTable(WrappedConnectionTableColumns.columnWidthPercentages());
         connectionTable.setModel(tableModel);
         connectionTable.setSelectionMode(SINGLE_SELECTION);
+        tableModel.addTableModelListener(e -> {
+            if (e.getType() == TableModelEvent.INSERT) {
+                if (tableModel.getRowCount() > 0) {
+                    SwingUtilities.invokeLater(() ->
+                            connectionTable.setRowSelectionInterval(0, 0)
+                    );
+                }
+            }
+        });
 
         connectionTable.setDefaultRenderer(ExtensionWebSocketCreationStatus.class, new StatusCellRenderer());
         connectionTable.setDefaultRenderer(String.class, new LeftAlignedCellRender());
@@ -55,9 +65,25 @@ public class WrappedConnectionTable extends JPanel {
         popupMenu.add(clearTableMenuItem);
         connectionTable.setComponentPopupMenu(popupMenu);
 
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBorder(BorderFactory.createEmptyBorder(11, 8, 11, 8));
+        JLabel messagesLabel = new JLabel("Connections");
+        messagesLabel.setFont(messagesLabel.getFont().deriveFont(Font.BOLD, messagesLabel.getFont().getSize()));
+        topPanel.add(messagesLabel, BorderLayout.WEST);
+        userInterface.applyThemeToComponent(topPanel);
+
         JScrollPane scrollPane = new JScrollPane(connectionTable);
 
-        this.add(scrollPane, BorderLayout.CENTER);
+        // Create panel that contains both top panel and scroll pane
+        JPanel tablePanel = new JPanel(new BorderLayout());
+        tablePanel.add(topPanel, BorderLayout.NORTH);
+        tablePanel.add(scrollPane, BorderLayout.CENTER);
+
+        this.add(tablePanel, BorderLayout.CENTER);
+
+//        JScrollPane scrollPane = new JScrollPane(connectionTable);
+//
+//        this.add(scrollPane, BorderLayout.CENTER);
     }
 
     private static class StatusCellRenderer extends DefaultTableCellRenderer {

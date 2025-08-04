@@ -3,7 +3,7 @@ package python;
 import burp.api.montoya.websocket.WebSockets;
 import data.PendingMessages;
 import logger.Logger;
-import socket.TurboWebSocketMessagePublisher;
+import socket.TurboConnectionPublisher;
 
 import java.util.function.Supplier;
 
@@ -12,14 +12,14 @@ public class ConnectionFactoryFactory {
     private final WebSockets webSockets;
     private final PendingMessages pendingMessages;
     private final Supplier<Integer> attackIdSupplier;
-    private final TurboWebSocketMessagePublisher publisher;
+    private final TurboConnectionPublisher publisher;
 
     public ConnectionFactoryFactory(
             Logger logger,
             WebSockets webSockets,
             PendingMessages pendingMessages,
             Supplier<Integer> attackIdSupplier,
-            TurboWebSocketMessagePublisher publisher
+            TurboConnectionPublisher publisher
     ) {
         this.logger = logger;
         this.webSockets = webSockets;

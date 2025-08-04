@@ -2,6 +2,7 @@ package turbo;
 
 import logger.Logger;
 import logger.LoggerLevel;
+import org.python.core.PyException;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -27,8 +28,11 @@ public class TurboThreadExecutor {
             logger.logOutput(LoggerLevel.DEBUG, "Task started: " + task);
             try {
                 task.run();
+            } catch (PyException e) {
+                logger.logOutput(LoggerLevel.UI,
+                        "Jython code error. Please review.\n" + e.getMessage());
             } catch (Exception e) {
-                logger.logOutput("Unkonwn exception: " + e.getMessage());
+                logger.logOutput("Unknown exception: " + e.getMessage());
             } finally {
                 logger.logOutput(LoggerLevel.DEBUG, "Task completed: " + task);
             }
@@ -40,11 +44,9 @@ public class TurboThreadExecutor {
         executorService.shutdown();
         try {
             if (!executorService.awaitTermination(100, TimeUnit.MILLISECONDS)) {
-                logger.logOutput(LoggerLevel.DEBUG, "Service did not terminate in the specified time.");
                 executorService.shutdownNow();
             }
         } catch (InterruptedException e) {
-            logger.logOutput(LoggerLevel.DEBUG, "Service interrupted during shutdown, forcing shutdownNow.");
             executorService.shutdownNow();
         }
         logger.logOutput(LoggerLevel.DEBUG, "Executor Service shut down.");

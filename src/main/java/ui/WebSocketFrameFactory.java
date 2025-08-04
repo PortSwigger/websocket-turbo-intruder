@@ -6,13 +6,13 @@ import attack.AttackState;
 import burp.api.montoya.ai.Ai;
 import burp.api.montoya.ui.UserInterface;
 import burp.api.montoya.websocket.WebSockets;
-import config.FileLocationConfiguration;
+import config.ExtensionConfiguration;
 import data.InitialWebSocketMessage;
 import data.MessagesToDisplay;
 import data.PendingMessages;
 import logger.Logger;
 import python.ConnectionFactoryFactory;
-import socket.TurboWebSocketMessagePublisher;
+import socket.TurboConnectionPublisher;
 import ui.attack.table.WebSocketMessageTableModel;
 import ui.editor.AiManager;
 
@@ -22,25 +22,28 @@ import java.awt.event.WindowEvent;
 public class WebSocketFrameFactory {
     private final Logger logger;
     private final UserInterface userInterface;
-    private final FileLocationConfiguration fileLocationConfiguration;
+    private final ExtensionConfiguration extensionConfiguration;
     private final WebSockets webSockets;
     private final Ai ai;
-    private final TurboWebSocketMessagePublisher publisher;
+    private final TurboConnectionPublisher publisher;
+    private final WebSocketMessageTableModel historyTableModel;
 
     public WebSocketFrameFactory(
             Logger logger,
             UserInterface userInterface,
-            FileLocationConfiguration fileLocationConfiguration,
+            ExtensionConfiguration extensionConfiguration,
             WebSockets webSockets,
             Ai ai,
-            TurboWebSocketMessagePublisher publisher
+            TurboConnectionPublisher publisher,
+            WebSocketMessageTableModel historyTableModel
     ) {
         this.logger = logger;
         this.userInterface = userInterface;
-        this.fileLocationConfiguration = fileLocationConfiguration;
+        this.extensionConfiguration = extensionConfiguration;
         this.webSockets = webSockets;
         this.ai = ai;
         this.publisher = publisher;
+        this.historyTableModel = historyTableModel;
     }
 
     public WebSocketFrame from(InitialWebSocketMessage webSocketMessage) {
@@ -68,6 +71,7 @@ public class WebSocketFrameFactory {
                 logger,
                 pendingMessages,
                 messagesToDisplay,
+                historyTableModel::add,
                 webSocketMessageTableModel::add,
                 scriptExecutor,
                 attackState
@@ -78,7 +82,7 @@ public class WebSocketFrameFactory {
                 logger,
                 userInterface,
                 aiManager,
-                fileLocationConfiguration,
+                extensionConfiguration,
                 webSocketMessage,
                 webSocketMessageTableModel,
                 attackManager,

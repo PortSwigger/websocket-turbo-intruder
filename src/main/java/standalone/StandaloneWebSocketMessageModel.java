@@ -18,7 +18,7 @@ import java.util.Optional;
 public class StandaloneWebSocketMessageModel {
     private final Logger logger;
     private final List<ConnectionMessage> connectionMessageList;
-    private String logFilePath;
+    private final String logFilePath;
 
     public StandaloneWebSocketMessageModel(Logger logger, String logFilePath) {
         this.logger = logger;
@@ -40,7 +40,7 @@ public class StandaloneWebSocketMessageModel {
         json.put("response", Base64.getUrlEncoder().encodeToString(message.getMessageByteBuffer().array()));
 
         try (FileWriter writer = new FileWriter(logFilePath, true)) {
-            writer.write(json.toString() + System.lineSeparator());
+            writer.write(json + System.lineSeparator());
             writer.flush();
         } catch (IOException e) {
             logger.logError(e.getMessage());

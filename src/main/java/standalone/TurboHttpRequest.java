@@ -15,9 +15,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 public class TurboHttpRequest implements HttpRequest {
-    private String url;
-    private String request;
-    private TurboHttpService service;
+    private final String url;
+    private final String request;
+    private final TurboHttpService service;
 
     public TurboHttpRequest(String request, String url) {
         this.request = request;

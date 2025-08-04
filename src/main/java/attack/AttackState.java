@@ -32,7 +32,7 @@ public class AttackState implements AttackStatus {
         attackId.incrementAndGet();
     }
 
-    void endAttack() {
+    public void endAttack() {
         isRunning.set(false);
     }
 }

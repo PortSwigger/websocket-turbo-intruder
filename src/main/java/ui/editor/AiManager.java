@@ -7,7 +7,6 @@ import burp.api.montoya.ai.chat.PromptOptions;
 import burp.api.montoya.ai.chat.PromptResponse;
 import logger.Logger;
 import turbo.TurboThreadExecutor;
-import utils.AiUtilities;
 
 import javax.swing.*;
 import javax.swing.text.JTextComponent;
@@ -27,8 +26,11 @@ public class AiManager {
         return ai != null && ai.isEnabled();
     }
 
-    public void prompt(JButton sendButton, JTextArea inputArea,
-                       JTextComponent scriptTextComponent) {
+    public void prompt(
+            String system,
+            JButton sendButton,
+            JTextArea inputArea,
+            JTextComponent scriptTextComponent) {
         if (ai != null && ai.isEnabled()) {
             threadExecutor.submitTask(() -> {
                 sendButton.setText("Generating...");
@@ -37,7 +39,7 @@ public class AiManager {
                 try {
                     PromptResponse response = ai.prompt().execute(
                             PromptOptions.promptOptions(),
-                            Message.systemMessage(AiUtilities.SYSTEM_PROMPT),
+                            Message.systemMessage(system),
                             Message.userMessage(inputArea.getText()));
                     scriptTextComponent.setText(response.content());
                 } catch (PromptException e) {

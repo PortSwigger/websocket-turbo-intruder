@@ -119,24 +119,24 @@ public class WebSocketConnectionMessage implements ConnectionMessage {
     }
 
     @Override
-    public int getCode() {
-        return FrameType.TEXT.value;
+    public FrameType getCode() {
+        return FrameType.TEXT;
     }
 
-    @Override
-    public void setAttributes(Map<WebSocketAttributeType, Integer> attributes) {
-        this.attributes = attributes;
-    }
+//    @Override
+//    public void setAttributes(Map<WebSocketAttributeType, Integer> attributes) {
+//        this.attributes = attributes;
+//    }
 
-    @Override
-    public int getWordCount() {
-        return this.attributes.getOrDefault(WebSocketAttributeType.WORD_COUNT, 0);
-    }
+//    @Override
+//    public int getWordCount() {
+//        return this.attributes.getOrDefault(WebSocketAttributeType.SPACE_COUNT, 0);
+//    }
 
-    @Override
-    public int getKeyCount() {
-        return this.attributes.getOrDefault(WebSocketAttributeType.KEY_COUNT, 0);
-    }
+//    @Override
+//    public int getKeyCount() {
+//        return this.attributes.getOrDefault(WebSocketAttributeType.KEY_COUNT, 0);
+//    }
 
     @Override
     public boolean isInteresting() {

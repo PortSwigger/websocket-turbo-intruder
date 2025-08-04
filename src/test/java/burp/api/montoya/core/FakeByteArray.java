@@ -115,14 +115,12 @@ public class FakeByteArray implements ByteArray {
     }
 
     @Override
-    public int indexOf(Pattern pattern)
-    {
+    public int indexOf(Pattern pattern) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int indexOf(Pattern pattern, int i, int i1)
-    {
+    public int indexOf(Pattern pattern, int i, int i1) {
         throw new UnsupportedOperationException();
     }
 
@@ -157,14 +155,12 @@ public class FakeByteArray implements ByteArray {
     }
 
     @Override
-    public int countMatches(Pattern pattern)
-    {
+    public int countMatches(Pattern pattern) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int countMatches(Pattern pattern, int i, int i1)
-    {
+    public int countMatches(Pattern pattern, int i, int i1) {
         throw new UnsupportedOperationException();
     }
 

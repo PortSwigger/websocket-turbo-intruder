@@ -1,102 +1,80 @@
 package embedded;
 
+import burp.api.montoya.http.message.requests.MalformedRequestException;
+import burp.api.montoya.websocket.WebSockets;
+import data.ConnectionMessage;
 import data.InitialWebSocketMessage;
 import logger.Logger;
-import turbo.TurboThreadExecutor;
 
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
-import static java.time.LocalTime.now;
-import static logger.LoggerLevel.UI;
-
-public class ServerManager {
+public class ServerManager implements ServerStarter {
     private final Logger logger;
+    private final Consumer<ConnectionMessage> historyMessageConsumer;
     private final Consumer<ConnectionWrapper> connectionsConsumer;
-    private final WebSocketsToConnect webSocketsToConnect;
-    private final EmbeddedServerExecutor serverExecutor;
-    private final List<InitialWebSocketMessage> webSocketMessages;
-    private EmbeddedServerState serverState;
-    private TurboThreadExecutor sendMessageExecutorService;
-    private TurboThreadExecutor connectionExecutorService;
+    private final TurboTableItemList wsItems;
+    private final WebSockets websockets;
+    private final ServerStatus serverStatus;
+    private JettyEmbeddedServerExecutor serverExecutor;
+    private ServerDetails serverDetails;
 
     public ServerManager(
             Logger logger,
-            List<InitialWebSocketMessage> webSocketMessages,
-            WebSocketsToConnect webSocketsToConnect,
+            WebSockets websockets,
+            TurboTableItemList wsItems,
+            Consumer<ConnectionMessage> historyMessageConsumer,
             Consumer<ConnectionWrapper> connectionsConsumer,
-            EmbeddedServerExecutor serverExecutor,
-            EmbeddedServerState serverState) {
+            ServerStatus serverStatus) {
         this.logger = logger;
-        this.webSocketMessages = webSocketMessages;
+        this.historyMessageConsumer = historyMessageConsumer;
+        this.websockets = websockets;
+        this.wsItems = wsItems;
+        this.serverStatus = serverStatus;
         this.connectionsConsumer = connectionsConsumer;
-        this.webSocketsToConnect = webSocketsToConnect;
-        this.serverExecutor = serverExecutor;
-        this.serverState = serverState;
     }
 
-    public void startServer() {
-        serverState.startServer();
+    public void startServer(ServerDetails serverDetails) {
+        this.serverDetails = serverDetails;
+        serverStatus.start();
+        serverExecutor = new JettyEmbeddedServerExecutor(logger, serverDetails);
+        serverExecutor.start();
 
-        serverExecutor.startServer();
-
-        String message = String.format("[%s] Embedded server started.",
-                now().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS")));
-        logger.logOutput(UI, message);
-
-        sendMessageExecutorService = new TurboThreadExecutor(logger);
-        sendMessageExecutorService.submitTask(
-                new ConnectionQueueConsumer(
-                        serverExecutor::processConnection,
-                        serverState,
-                        webSocketsToConnect
-                )
-        );
-
-        connectionExecutorService = new TurboThreadExecutor(logger);
-        connectionExecutorService.submitTask(new Runnable() {
-            @Override
-            public void run() {
-                if (serverState.isRunning()) {
-                    Map<String, List<InitialWebSocketMessage>> connections = webSocketMessages.stream()
-                            .collect(Collectors.groupingBy(
-                                    msg -> msg.upgradeRequest().url(),
-                                    Collectors.toList()
-                            ));
-                    for (Map.Entry<String, List<InitialWebSocketMessage>> entry : connections.entrySet()) {
-                        try {
-                            if (!entry.getValue().isEmpty()) {
-                                InitialWebSocketMessage initialWebSocketMessage = entry.getValue().getFirst();
-                                ConnectionWrapper client = new ConnectionWrapper(
-                                        logger,
-                                        initialWebSocketMessage.upgradeRequest(),
-                                        entry.getValue().stream().map(InitialWebSocketMessage::message).toList(),
-                                        new ArrayList<>());
-                                webSocketsToConnect.accept(client);
-                                connectionsConsumer.accept(client);
-                            }
-                        } catch (Exception e) {
-                            logger.logError("Connection failed");
-                        }
+        for (TurboTableItem item : wsItems.getItems()) {
+            if (item instanceof WebSocketsTurboItem wsItem) {
+                try {
+                    ConnectionWrapper client = new ConnectionWrapper(
+                            logger,
+                            historyMessageConsumer,
+                            websockets,
+                            wsItem.getUpgradeRequest(),
+                            wsItem.getMessages().stream().map(InitialWebSocketMessage::message).toList(),
+                            serverDetails.getScript()
+                    );
+                    serverExecutor.processConnection(client);
+                    connectionsConsumer.accept(client);
+                } catch (Exception e) {
+                    try {
+                        logger.logError("Connection to " + wsItem.getUpgradeRequest().url() + " failed.");
+                    } catch (MalformedRequestException exception) {
+                        logger.logError(exception.getMessage());
                     }
-                } else {
-                    logger.logError("Server is not running. Can not create connection");
+
                 }
             }
-        });
+        }
+    }
+
+    @Override
+    public String uri() {
+        return serverDetails == null ? "" : String.format("http://127.0.0.1:%d/proxy", serverDetails.getPort());
     }
 
     public void stopServer() {
-        serverState.stopServer();
-        serverExecutor.stopServer();
+        serverStatus.stop();
+        if (serverExecutor != null) serverExecutor.stop();
+    }
 
-        if (sendMessageExecutorService != null) sendMessageExecutorService.shutdown();
-        if (connectionExecutorService != null) connectionExecutorService.shutdown();
-
-        webSocketsToConnect.clear();
+    public String secret() {
+        return serverDetails == null ? "" : serverDetails.getSecret();
     }
 }

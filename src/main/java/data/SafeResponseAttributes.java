@@ -7,9 +7,9 @@ import utils.StringUtillities;
 import java.util.*;
 
 public class SafeResponseAttributes {
-    private static double TOLERANCE = 0.1;
-    private Map<WebSocketAttributeType, Integer> attributes;
-    private Map<WebSocketAttributeType, Set<String>> stringAttributes;
+    private static final double TOLERANCE = 0.1;
+    private final Map<WebSocketAttributeType, Integer> attributes;
+    private final Map<WebSocketAttributeType, Set<String>> stringAttributes;
 
     public SafeResponseAttributes(ConnectionMessage message) {
         this.attributes = new HashMap<>();
@@ -23,7 +23,7 @@ public class SafeResponseAttributes {
                 case KEY_COUNT -> parseKeyCount(message);
                 case KEY_NAMES -> parseKeyNames(message);
                 case LINE_COUNT -> parseLineCount(message);
-                case WORD_COUNT -> parseWordCount(message);
+                case SPACE_COUNT -> parseWordCount(message);
                 case CONTENT_LENGTH -> parseContentLength(message);
 //                case TIME -> parseTime(message);
                 default -> {
@@ -34,7 +34,7 @@ public class SafeResponseAttributes {
     }
 
     private void parseKeyCount(ConnectionMessage message) {
-        if (message.getCode() == FrameType.TEXT.value) {
+        if (message.getCode() == FrameType.TEXT) {
             try {
                 JSONObject json = new JSONObject(message.getMessage());
                 int keyCount = json.keySet().size();
@@ -49,7 +49,7 @@ public class SafeResponseAttributes {
     }
 
     private void parseKeyNames(ConnectionMessage message) {
-        if (message.getCode() == FrameType.TEXT.value) {
+        if (message.getCode() == FrameType.TEXT) {
             try {
                 JSONObject json = new JSONObject(message.getMessage());
                 Set<String> keys = json.keySet();
@@ -64,7 +64,7 @@ public class SafeResponseAttributes {
     }
 
     private void parseLineCount(ConnectionMessage message) {
-        if (message.getCode() == FrameType.TEXT.value) {
+        if (message.getCode() == FrameType.TEXT) {
             String msg = message.getMessage();
             int lineCount = msg.split("\r\n|\r|\n").length;
             attributes.put(WebSocketAttributeType.LINE_COUNT, lineCount);
@@ -74,12 +74,12 @@ public class SafeResponseAttributes {
     }
 
     private void parseWordCount(ConnectionMessage message) {
-        if (message.getCode() == FrameType.TEXT.value) {
+        if (message.getCode() == FrameType.TEXT) {
             String msg = message.getMessage();
             int wordCount = msg.trim().isEmpty() ? 0 : StringUtillities.countWords(msg);
-            attributes.put(WebSocketAttributeType.WORD_COUNT, wordCount);
+            attributes.put(WebSocketAttributeType.SPACE_COUNT, wordCount);
         } else {
-            attributes.put(WebSocketAttributeType.WORD_COUNT, 0);
+            attributes.put(WebSocketAttributeType.SPACE_COUNT, 0);
         }
     }
 

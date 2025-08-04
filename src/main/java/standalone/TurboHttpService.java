@@ -6,9 +6,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 public class TurboHttpService implements HttpService {
-    private String host;
-    private int port;
-    private boolean isSecure;
+    private final String host;
+    private final int port;
+    private final boolean isSecure;
 
     public TurboHttpService(String host, int port, boolean isSecure) {
         this.host = host;

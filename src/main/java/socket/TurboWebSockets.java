@@ -7,7 +7,7 @@ import burp.api.montoya.websocket.WebSocketCreatedHandler;
 import burp.api.montoya.websocket.WebSockets;
 import logger.Logger;
 import logger.LoggerLevel;
-import turbo.RawException;
+import turbo.TurboRuntimeException;
 
 import java.nio.charset.StandardCharsets;
 
@@ -58,7 +58,7 @@ public class TurboWebSockets implements WebSockets {
                     config
             );
             if (ws.isOpen()) return new TurboExtensionWebSocketCreation(ws);
-        } catch (RawException exception) {
+        } catch (TurboRuntimeException exception) {
             logger.logOutput(LoggerLevel.UI, exception.getMessage());
         }
         return TurboExtensionWebSocketCreation.empty();

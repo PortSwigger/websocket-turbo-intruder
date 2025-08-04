@@ -4,6 +4,7 @@ import burp.api.montoya.ui.contextmenu.ContextMenuEvent;
 import burp.api.montoya.ui.contextmenu.ContextMenuItemsProvider;
 import burp.api.montoya.ui.contextmenu.WebSocketContextMenuEvent;
 import data.HttpContextMenuEventAdapter;
+import data.InitialWebSocketMessage;
 import data.WebSocketContextMenuEventAdapter;
 import ui.EmbeddedServerFrameFactory;
 import ui.WebSocketFrameFactory;
@@ -51,7 +52,7 @@ public class WebSocketContextMenuItemsProvider implements ContextMenuItemsProvid
         JMenuItem sendToContextMenuItem = new JMenuItem("Send to " + EXTENSION_NAME);
         sendToContextMenuItem.addActionListener(l -> performWebSocketAction(event));
 
-        JMenuItem sendToEmbeddedServerContextMenuItem = new JMenuItem("Send to Embedded Server");
+        JMenuItem sendToEmbeddedServerContextMenuItem = new JMenuItem("Send to WebSocket HTTP middleware");
         sendToEmbeddedServerContextMenuItem.addActionListener(l -> performEmbeddedHttpServerAction(event));
 
         return List.of(sendToContextMenuItem, sendToEmbeddedServerContextMenuItem);
@@ -64,7 +65,18 @@ public class WebSocketContextMenuItemsProvider implements ContextMenuItemsProvid
     }
 
     private void performHttpAction(ContextMenuEvent event) {
-        httpContextMenuEventAdapter.apply(event).stream()
+        List<InitialWebSocketMessage> messages = httpContextMenuEventAdapter.apply(event);
+        if (messages.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                    null,
+                    "No valid HTTP request was found.\nCheck if the request is malformed or missing.",
+                    "Unable to Send to " + EXTENSION_NAME,
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        messages.stream()
                 .map(webSocketFrameFactory::from)
                 .forEach(newFrameConsumer);
     }

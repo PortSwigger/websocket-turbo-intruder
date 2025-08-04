@@ -9,10 +9,8 @@ import queue.SendMessageQueueConsumer;
 import queue.TableBlockingQueueConsumer;
 import turbo.TurboThreadExecutor;
 
-import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
-import static java.time.LocalTime.now;
 import static logger.LoggerLevel.DEBUG;
 import static logger.LoggerLevel.UI;
 
@@ -20,6 +18,7 @@ public class AttackManager implements AttackStarter, AttackStopper {
     private final Logger logger;
     private final PendingMessages pendingMessages;
     private final MessagesToDisplay messagesToDisplay;
+    private final Consumer<ConnectionMessage> historyMessageConsumer;
     private final Consumer<ConnectionMessage> connectionMessageConsumer;
     private final AttackScriptExecutor scriptExecutor;
     private final AttackState attackState;
@@ -31,6 +30,7 @@ public class AttackManager implements AttackStarter, AttackStopper {
             Logger logger,
             PendingMessages pendingMessages,
             MessagesToDisplay messagesToDisplay,
+            Consumer<ConnectionMessage> historyMessageConsumer,
             Consumer<ConnectionMessage> messageConsumer,
             AttackScriptExecutor scriptExecutor,
             AttackState attackState
@@ -38,6 +38,7 @@ public class AttackManager implements AttackStarter, AttackStopper {
         this.logger = logger;
         this.pendingMessages = pendingMessages;
         this.messagesToDisplay = messagesToDisplay;
+        this.historyMessageConsumer = historyMessageConsumer;
         this.connectionMessageConsumer = messageConsumer;
         this.scriptExecutor = scriptExecutor;
         this.attackState = attackState;
@@ -47,20 +48,20 @@ public class AttackManager implements AttackStarter, AttackStopper {
     public void startAttack(AttackDetails attackDetails) {
         attackState.newAttack();
 
-//        sendMessageExecutorService = newFixedThreadPool(attackDetails.numberOfThreads());
         sendMessageExecutorService = new TurboThreadExecutor(logger, attackDetails.numberOfThreads());
         sendMessageExecutorService.submitTask(
                 new SendMessageQueueConsumer(
+                        historyMessageConsumer,
                         scriptExecutor::processMessage,
                         attackState,
                         pendingMessages
                 )
         );
-        String message = String.format("[%s] Number of threads attack started with: %d",
-                now().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS")),
-                attackDetails.numberOfThreads());
-        logger.logOutput(UI, new String(new char[message.length()]).replace("\0", "—"));
-        logger.logOutput(UI, message);
+
+        logger.logOutput(UI,
+                String.format("Attack %d. Number of threads attack started with: %d",
+                        attackState.currentAttackId(),
+                        attackDetails.numberOfThreads()));
 
         tableExecutorService = new TurboThreadExecutor(logger);
         tableExecutorService.submitTask(
@@ -81,16 +82,12 @@ public class AttackManager implements AttackStarter, AttackStopper {
 
         scriptExecutor.stopAttack();
 
-        sendMessageExecutorService.shutdown();
+        if (sendMessageExecutorService != null) sendMessageExecutorService.shutdown();
 
-        tableExecutorService.shutdown();
+        if (tableExecutorService != null) tableExecutorService.shutdown();
 
-        pendingMessages.clear();
-        messagesToDisplay.clear();
-    }
-
-    public void registerListener(Consumer<String> listener) {
-        this.logger.registerListener(listener);
+        if (pendingMessages != null) pendingMessages.clear();
+        if (messagesToDisplay != null) messagesToDisplay.clear();
     }
 
     public void registerProgressListener(Consumer<String> listener) {

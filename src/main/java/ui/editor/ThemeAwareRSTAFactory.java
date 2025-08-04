@@ -18,7 +18,7 @@ public class ThemeAwareRSTAFactory {
         this.logger = logger;
     }
 
-    RSyntaxTextArea build() {
+    public RSyntaxTextArea build() {
         JTextComponent.removeKeymap("RTextAreaKeymap");
         UIManager.put("RTextAreaUI.inputMap", null);
         UIManager.put("RTextAreaUI.actionMap", null);

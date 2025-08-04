@@ -3,29 +3,105 @@ package utils;
 import burp.WebSocketFuzzer;
 import burp.api.montoya.core.ByteArray;
 import burp.api.montoya.core.Range;
-import config.FileLocationConfiguration;
+import config.ExtensionConfiguration;
+import data.ConnectionMessage;
 import data.FrameData;
 import data.FrameType;
+import data.WebSocketAttributeType;
 import logger.Logger;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static burp.api.montoya.core.ByteArray.byteArray;
 
 public class Utilities {
     public static final int MAGIC = 0xD4D;
+    public static final String INITIAL_MESSAGE = "INITIAL MESSAGE";
     public static final String CONNECTION_CLOSED = "Connection closed";
-    // Map of WebSocket close codes to reasons
-    private static final Map<Integer, String> STATUS_CODE_REASONS = new HashMap<>();
+    public static final String GREETINGS = """
+            This extension should be run on the latest version of Burp Suite.
+            Using an older version of Burp may cause impaired functionality.
+            """;
+    public static final List<String> WHITESPACE_CODEPOINTS = List.of(
+            " ",
+            "\t",
+            "\u000B",
+            "\u000C",
+            "\u001C",
+            "\u001D",
+            "\u001E",
+            "\u001F",
+            "\u0085",
+            "\u00A0",
+            "\u1680",
+            "\u2000",
+            "\u2001",
+            "\u2002",
+            "\u2003",
+            "\u2004",
+            "\u2005",
+            "\u2006",
+            "\u2007",
+            "\u2008",
+            "\u2009",
+            "\u200A",
+            "\u2028",
+            "\u2029",
+            "\u202F",
+            "\u205F",
+            "\u3000"
+    );
+    public static final List<String> LINEBREAK_CODEPOINTS = List.of(
+            "\r",
+            "\n",
+            "\u000B",
+            "\u000C",
+            "\u001C",
+            "\u001D",
+            "\u001E",
+            "\u0085",
+            "\u2028",
+            "\u2029"
+    );
+    public static final List<String> BACKSLASH_KEYS = List.of(
+            "\",\"",
+            "true",
+            "false",
+            "\"\"",
+            "[]",
+            "error",
+            "exception",
+            "illegal",
+            "invalid",
+            "warning",
+            "fail",
+            "stack",
+            "access",
+            "sql syntax",
+            "divisor",
+            "divide",
+            "ora-",
+            "division",
+            "infinity"
+    );
     private static final String ENVIRONMENT = "ScriptEnvironment.py";
+    private static final Map<Integer, String> STATUS_CODE_REASONS = new HashMap<>();
 
     static {
         STATUS_CODE_REASONS.put(1000, "Normal Closure: The connection successfully completed.");
@@ -88,31 +164,6 @@ public class Utilities {
         return encodeFrame(new FrameData(type, payload, length));
     }
 
-//    public static ByteBuffer encodeFrame(ByteArray array) {
-//        if (array == null || array.length() == 0) {
-//            throw new IllegalArgumentException("Input array must not be null or empty.");
-//        }
-//
-//        if (array.length() <= Long.BYTES) {
-//            throw new IllegalArgumentException("Input array is too short.");
-//        }
-//
-//        ByteArray code = array.subArray(0, 1);
-//        ByteArray length = array.subArray(1, Long.BYTES + 1);
-//        ByteArray payload;
-//        if (array.length() > Long.BYTES + 1) {
-//            payload = array.subArray(Long.BYTES + 1, array.length());
-//        } else {
-//            payload = ByteArray.byteArrayOfLength(0);
-//        }
-//
-//        FrameType type = FrameType.from(code.getByte(0));
-//        if (type == null) {
-//            return ByteBuffer.wrap(payload.getBytes());
-//        }
-//
-//        return encodeFrame(new FrameData(type, payload.getBytes(), ByteBuffer.wrap(length.getBytes()).getLong()));
-//    }
 
     public static ByteBuffer encodeFrame(FrameData framedata) {
 
@@ -165,9 +216,28 @@ public class Utilities {
         return frameBuffer;
     }
 
-    public static JMenu generateMenu(Logger logger, FileLocationConfiguration fileLocationConfiguration, Runnable unloadAction) {
+    public static JPanel createLabeledComponent(String labelText, Component component) {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+        // Create the label
+        JLabel label = new JLabel(labelText);
+        label.setHorizontalAlignment(SwingConstants.CENTER); // Center align the label
+        panel.add(label, BorderLayout.NORTH);
+
+        // Add the original component below the label
+        panel.add(component, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    public static JMenu generateMenu(
+            Logger logger,
+            ExtensionConfiguration extensionConfiguration,
+            Runnable loggerAction,
+            Runnable unloadAction) {
         JMenuItem resetDefaultScriptsMenuItem = new JMenuItem("Reset scripts directory to default.");
-        resetDefaultScriptsMenuItem.addActionListener(l -> fileLocationConfiguration.setWebSocketScriptPath());
+        resetDefaultScriptsMenuItem.addActionListener(l -> extensionConfiguration.setWebSocketScriptPath());
 
         JMenuItem closeAllFramesMenuItem = new JMenuItem("Close all " + WebSocketFuzzer.EXTENSION_NAME + " windows.");
         closeAllFramesMenuItem.addActionListener(l -> unloadAction.run());
@@ -175,12 +245,44 @@ public class Utilities {
         JCheckBoxMenuItem loggingLevelDebug = new JCheckBoxMenuItem("Debug mode", logger.isDebugLogLevel());
         loggingLevelDebug.addActionListener(l -> logger.setDebugLogLevel(loggingLevelDebug.getState()));
 
+        JCheckBoxMenuItem loggerMenuItem = new JCheckBoxMenuItem("Logger", logger.isDebugLogLevel());
+        Boolean loggerOn = Objects.requireNonNullElse(extensionConfiguration.getWebSocketsLogger(), Boolean.TRUE);
+        loggerMenuItem.setState(loggerOn);
+        loggerMenuItem.addActionListener(e -> {
+            extensionConfiguration.setWebSocketsLogger(!loggerOn);
+            loggerAction.run();
+        });
+
         JMenu menu = new JMenu(WebSocketFuzzer.EXTENSION_NAME);
         menu.add(resetDefaultScriptsMenuItem);
         menu.add(closeAllFramesMenuItem);
         menu.add(loggingLevelDebug);
+        menu.add(loggerMenuItem);
 
         return menu;
+    }
+
+    public static void setupFocusableButton(JButton button) {
+        button.setFocusable(true);
+        button.setEnabled(true);
+        button.setVisible(true);
+        button.setOpaque(true);
+
+        SwingUtilities.invokeLater(button::requestFocus);
+
+        Border defaultBorder = button.getBorder();
+
+        button.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                button.setBorder(BorderFactory.createLineBorder(new Color(3, 161, 252), 1));
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                button.setBorder(defaultBorder);
+            }
+        });
     }
 
     public static ByteArray insertPlaceholder(ByteArray initialPayload, Range range, String placeholder) {
@@ -211,7 +313,7 @@ public class Utilities {
                 String.format("%s: This code is not defined in the WebSocket specification.", CONNECTION_CLOSED)
         );
 
-        return String.format("%s: %d - %s%s", CONNECTION_CLOSED, statusCode, predefinedReason, reason.isEmpty() ? "" : String.format(" Reason: %s", reason));
+        return String.format("%s(%d) - %s%s", CONNECTION_CLOSED, statusCode, predefinedReason, reason.isEmpty() ? "" : String.format(" Reason: %s", reason));
     }
 
     public static boolean startsWith(byte[] array, byte[] prefix) {
@@ -280,5 +382,64 @@ public class Utilities {
         int magic = buffer.getInt();
         int index = buffer.getInt();
         return buffer.getLong();
+    }
+
+    public static boolean isPortAvailable(int port) {
+        try (ServerSocket ss = new ServerSocket(port)) {
+            ss.setReuseAddress(true);
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    private static int countString(String input, String find) {
+        if (input.isEmpty() || find.isEmpty()) return 0;
+        int occurrences = 0;
+        int idx = input.indexOf(find);
+        while (idx != -1) {
+            occurrences++;
+            idx = input.indexOf(find, idx + find.length());
+        }
+        return occurrences;
+    }
+
+    public static HashMap<String, Object> calculateFingerprint(ConnectionMessage connectionMessage) {
+        HashMap<String, Object> fingerprint = new HashMap<>();
+        if (connectionMessage.getMessage().isEmpty()) {
+            fingerprint.put(String.valueOf(WebSocketAttributeType.CONTENT_LENGTH), 0);
+            return fingerprint;
+        }
+        if (connectionMessage.getCode() == FrameType.TEXT) {
+            try {
+                JSONObject json = new JSONObject(connectionMessage.getMessage());
+                int keyCount = json.keySet().size();
+                fingerprint.put(String.valueOf(WebSocketAttributeType.KEY_COUNT), keyCount);
+                Set<String> jsonKeys = json.keySet();
+                fingerprint.put(String.valueOf(WebSocketAttributeType.KEY_NAMES), jsonKeys.stream().sorted().collect(Collectors.joining(",")));
+            } catch (JSONException ignored) {
+            }
+            for (String key : BACKSLASH_KEYS) {
+                fingerprint.put(key, countString(connectionMessage.getMessage(), key));
+            }
+            int newLineCount = 0;
+            for (String newLine : LINEBREAK_CODEPOINTS) {
+                newLineCount += countString(connectionMessage.getMessage(), newLine);
+            }
+            fingerprint.put(String.valueOf(WebSocketAttributeType.LINE_COUNT), newLineCount);
+            int spaceCount = 0;
+            for (String space : WHITESPACE_CODEPOINTS) {
+                spaceCount += countString(connectionMessage.getMessage(), space);
+            }
+            fingerprint.put(String.valueOf(WebSocketAttributeType.SPACE_COUNT), spaceCount);
+        } else {
+            fingerprint.put(String.valueOf(WebSocketAttributeType.CONTENT_LENGTH), connectionMessage.getMessageLength());
+        }
+        for (WebSocketAttributeType type : WebSocketAttributeType.values()) {
+            if (!fingerprint.containsKey(String.valueOf(type))) {
+                fingerprint.put(String.valueOf(type), 0);
+            }
+        }
+        return fingerprint;
     }
 }

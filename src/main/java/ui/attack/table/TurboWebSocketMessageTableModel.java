@@ -14,7 +14,7 @@ import static java.awt.EventQueue.invokeLater;
 
 public class TurboWebSocketMessageTableModel extends AbstractTableModel {
     private final List<ConnectionMessage> connectionMessageList;
-    private List<ConnectionMessage> displayConnectionMessageList;
+    private final List<ConnectionMessage> displayConnectionMessageList;
 
     public TurboWebSocketMessageTableModel() {
         this.connectionMessageList = new ArrayList<>();

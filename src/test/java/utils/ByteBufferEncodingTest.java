@@ -1,10 +1,11 @@
 package utils;
 
+import org.junit.jupiter.api.Test;
+
+import java.nio.ByteBuffer;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static utils.Utilities.encodeFrame;
-
-import org.junit.jupiter.api.Test;
-import java.nio.ByteBuffer;
 
 class ByteBufferEncodingTest {
 
@@ -33,6 +34,7 @@ class ByteBufferEncodingTest {
 
         assertDoesNotThrow(() -> encodeFrame(buffer));
     }
+
     @Test
     void testEncodeFrame_ExploitBuffer_ShouldNotThrowException() {
         ByteBuffer buffer = ByteBuffer.allocate(1 + Long.BYTES + 5)

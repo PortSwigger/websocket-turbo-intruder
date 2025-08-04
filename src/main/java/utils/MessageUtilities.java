@@ -68,7 +68,8 @@ public class MessageUtilities {
                 response.getId(),
                 response.getHash(),
                 response.getMessageLength(),
-                response.getWordCount(),
+                0,
+//                response.getWordCount(),
                 response.getTime(),
                 response.getDateTime());
         stringBuilder.append(progress);

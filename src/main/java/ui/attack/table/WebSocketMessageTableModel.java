@@ -7,21 +7,33 @@ import utils.Pair;
 import javax.swing.table.AbstractTableModel;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static java.awt.EventQueue.invokeLater;
 
 public class WebSocketMessageTableModel extends AbstractTableModel {
-    private final List<ConnectionMessage> connectionMessageList;
+    private static final int MAX_MESSAGES = 1000;
+    private final boolean limitEnabled;
+    private final List<ConnectionMessage> messages;
+    private volatile boolean loggingEnabled = true;
 
     public WebSocketMessageTableModel() {
-        this.connectionMessageList = new ArrayList<>();
+        this.limitEnabled = false;
+        this.messages = Collections.synchronizedList(new ArrayList<>());
+    }
+
+    public WebSocketMessageTableModel(boolean limitEnabled) {
+        this.limitEnabled = limitEnabled;
+        this.messages = Collections.synchronizedList(new ArrayList<>(MAX_MESSAGES));
     }
 
     @Override
     public int getRowCount() {
-        return connectionMessageList.size();
+        synchronized (messages) {
+            return messages.size();
+        }
     }
 
     @Override
@@ -35,70 +47,103 @@ public class WebSocketMessageTableModel extends AbstractTableModel {
     }
 
     @Override
-    public Object getValueAt(int rowIndex, int columnIndex) {
-        ConnectionMessage webSocketConnectionMessage = connectionMessageList.get(rowIndex);
-
-        return switch (columnIndex) {
-            case 0 -> rowIndex;
-            case 1 -> webSocketConnectionMessage.getHash();
-            case 2 -> webSocketConnectionMessage.getDirection();
-            case 3 -> webSocketConnectionMessage.getMessageLength();
-            case 4 ->
-                    webSocketConnectionMessage.getDateTime().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS dd LLL yyyy"));
-            case 5 -> webSocketConnectionMessage.getTime();
-            case 6 -> webSocketConnectionMessage.getComment();
-            default -> "";
-        };
-    }
-
-    @Override
     public Class<?> getColumnClass(int columnIndex) {
         return AttackTableColumns.typeForIndex(columnIndex);
     }
 
+    @Override
+    public Object getValueAt(int rowIndex, int columnIndex) {
+        ConnectionMessage msg;
+        synchronized (messages) {
+            msg = messages.get(rowIndex);
+        }
+        return switch (columnIndex) {
+            case 0 -> rowIndex;
+            case 1 -> msg.getHash();
+            case 2 -> msg.getDirection();
+            case 3 -> msg.getMessageLength();
+            case 4 -> msg.getDateTime()
+                    .format(DateTimeFormatter.ofPattern(
+                            "HH:mm:ss.SSS dd LLL yyyy"));
+            case 5 -> msg.getTime();
+            case 6 -> msg.getComment();
+            default -> "";
+        };
+    }
+
+    public void setLoggingEnabled(boolean enabled) {
+        this.loggingEnabled = enabled;
+    }
+
     public void add(ConnectionMessage connectionMessage) {
-        invokeLater(() ->
-        {
-            int index = connectionMessageList.size();
-            connectionMessageList.add(connectionMessage);
-            fireTableRowsInserted(index, index);
-        });
-    }
-
-    public ConnectionMessage get(int rowIndex) {
-        return rowIndex < 0 || rowIndex >= connectionMessageList.size()
-                ? null
-                : connectionMessageList.get(rowIndex);
-    }
-
-    public Pair<ConnectionMessage, ConnectionMessage> getPair(int rowIndex) {
-        if (rowIndex < 0 || rowIndex >= connectionMessageList.size()) return null;
-        ConnectionMessage selected = connectionMessageList.get(rowIndex);
-        if (selected.getDirection() == Direction.CLIENT_TO_SERVER) {
-            Optional<ConnectionMessage> response = connectionMessageList
-                    .stream()
-                    .filter(connectionMessage -> connectionMessage.getDirection() == Direction.SERVER_TO_CLIENT)
-                    .filter(connectionMessage -> connectionMessage.getHash() == selected.getHash())
-                    .findFirst();
-            return response.map(connectionMessage -> new Pair<>(selected, connectionMessage)).orElseGet(() -> new Pair<>(selected, null));
+        if (!loggingEnabled) return;
+        if (limitEnabled) {
+            invokeLater(() -> {
+                synchronized (messages) {
+                    boolean evicted = false;
+                    if (messages.size() >= MAX_MESSAGES) {
+                        messages.remove(0);
+                        evicted = true;
+                    }
+                    messages.add(connectionMessage);
+                    int newIndex = messages.size() - 1;
+                    if (evicted) {
+                        fireTableRowsDeleted(0, 0);
+                    }
+                    fireTableRowsInserted(newIndex, newIndex);
+                }
+            });
         } else {
-            Optional<ConnectionMessage> request = connectionMessageList
-                    .stream()
-                    .filter(connectionMessage -> connectionMessage.getDirection() == Direction.CLIENT_TO_SERVER)
-                    .filter(connectionMessage -> connectionMessage.getHash() == selected.getHash())
-                    .findFirst();
-            return request.map(connectionMessage -> new Pair<>(connectionMessage, selected)).orElseGet(() -> new Pair<>(null, selected));
+            invokeLater(() ->
+            {
+                int index = messages.size();
+                messages.add(connectionMessage);
+                fireTableRowsInserted(index, index);
+            });
         }
     }
 
     public void clear() {
-        int rows = getRowCount();
+        invokeLater(() -> {
+            synchronized (messages) {
+                int size = messages.size();
+                if (size > 0) {
+                    messages.clear();
+                    fireTableRowsDeleted(0, size - 1);
+                }
+            }
+        });
+    }
 
-        if (rows == 0) {
-            return;
+    public ConnectionMessage get(int rowIndex) {
+        synchronized (messages) {
+            if (rowIndex < 0 || rowIndex >= messages.size()) {
+                return null;
+            }
+            return messages.get(rowIndex);
         }
+    }
 
-        connectionMessageList.clear();
-        fireTableRowsDeleted(0, rows - 1);
+    public Pair<ConnectionMessage, ConnectionMessage> getPair(int rowIndex) {
+        synchronized (messages) {
+            if (rowIndex < 0 || rowIndex >= messages.size()) {
+                return null;
+            }
+            ConnectionMessage selected = messages.get(rowIndex);
+            long hash = selected.getHash();
+            if (selected.getDirection() == Direction.CLIENT_TO_SERVER) {
+                Optional<ConnectionMessage> response = messages.stream()
+                        .filter(m -> m.getDirection() == Direction.SERVER_TO_CLIENT)
+                        .filter(m -> m.getHash() == hash)
+                        .findFirst();
+                return new Pair<>(selected, response.orElse(null));
+            } else {
+                Optional<ConnectionMessage> request = messages.stream()
+                        .filter(m -> m.getDirection() == Direction.CLIENT_TO_SERVER)
+                        .filter(m -> m.getHash() == hash)
+                        .findFirst();
+                return new Pair<>(request.orElse(null), selected);
+            }
+        }
     }
 }

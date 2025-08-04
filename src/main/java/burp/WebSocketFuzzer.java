@@ -4,18 +4,24 @@ import burp.api.montoya.BurpExtension;
 import burp.api.montoya.EnhancedCapability;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.ai.Ai;
+import burp.api.montoya.core.Registration;
 import burp.api.montoya.extension.Extension;
+import burp.api.montoya.organizer.Organizer;
 import burp.api.montoya.persistence.Preferences;
 import burp.api.montoya.ui.UserInterface;
 import burp.api.montoya.websocket.WebSockets;
-import config.FileLocationConfiguration;
+import config.ExtensionConfiguration;
 import logger.Logger;
 import logger.LoggerLevel;
-import socket.TurboWebSocketMessagePublisher;
+import socket.TurboConnectionPublisher;
 import ui.EmbeddedServerFrameFactory;
 import ui.WebSocketFrameFactory;
+import ui.attack.WebSocketLoggerPanel;
+import ui.attack.table.WebSocketMessageTableModel;
 import utils.AiUtilities;
+import utils.Utilities;
 
+import java.util.Objects;
 import java.util.Set;
 
 import static burp.api.montoya.EnhancedCapability.AI_FEATURES;
@@ -23,23 +29,9 @@ import static utils.Utilities.generateMenu;
 
 public class WebSocketFuzzer implements BurpExtension {
     public static final String EXTENSION_NAME = "WebSocket Turbo Intruder";
-    private static final String GREETINGS = """
-            Usage
-            
-            Intruder tool
-            1. Right-click on a WebSocket message and navigate to Extensions > WebSocket Turbo Intruder > Send to WebSocket Turbo Intruder.
-            If you highlight a portion of the message before sending, the highlighted content will be replaced with %s.
-            2. Select a template from the drop-down list.
-            3. Modify the Python code to fit your use case.
-            4. Start the attack.
-            
-            Middleware tool
-            1. Right-click on a WebSocket message and navigate to Extensions > WebSocket Turbo Intruder > Send to Embedded Server.
-            2. Click the Start button to launch the HTTP server middleware.
-            3. For each unique WebSocket connection, the extension will create an HTTP POST endpoint that routes requests to the remote server.
-            4. Select the HTTP server from the table list and send requests through one of Burp Suite's tools.
-            """;
+    private static final String EXTENSION_TAB = "WS Logger";
 
+    private Registration wsTabRegistration;
 
     @Override
     public void initialize(MontoyaApi api) {
@@ -49,18 +41,40 @@ public class WebSocketFuzzer implements BurpExtension {
         WebSockets websockets = api.websockets();
         Ai ai = AiUtilities.methodExists(api.getClass(), "ai") ? api.ai() : null;
         Logger logger = new Logger(api.logging());
+        Organizer organizer = api.organizer();
         WebSocketFuzzerFrames frames = new WebSocketFuzzerFrames(logger);
-        TurboWebSocketMessagePublisher publisher = new TurboWebSocketMessagePublisher();
+        TurboConnectionPublisher publisher = new TurboConnectionPublisher();
+        WebSocketMessageTableModel historyTableModel = new WebSocketMessageTableModel(true);
 
-
-        FileLocationConfiguration fileLocationConfiguration =
-                new FileLocationConfiguration(logger, preferences);
+        ExtensionConfiguration extensionConfiguration =
+                new ExtensionConfiguration(logger, preferences);
         WebSocketFrameFactory webSocketFrameFactory =
-                new WebSocketFrameFactory(logger, userInterface, fileLocationConfiguration, websockets, ai, publisher);
+                new WebSocketFrameFactory(logger, userInterface, extensionConfiguration, websockets, ai, publisher, historyTableModel);
         EmbeddedServerFrameFactory embeddedServerFrameFactory =
-                new EmbeddedServerFrameFactory(logger, userInterface);
+                new EmbeddedServerFrameFactory(ai, logger, extensionConfiguration, organizer, userInterface, websockets, historyTableModel);
 
-        userInterface.menuBar().registerMenu(generateMenu(logger, fileLocationConfiguration, frames::close));
+        Boolean loggerOn = Objects.requireNonNullElse(extensionConfiguration.getWebSocketsLogger(), Boolean.FALSE);
+        WebSocketLoggerPanel loggerPanel = new WebSocketLoggerPanel(userInterface, historyTableModel);
+        if (loggerOn) {
+            wsTabRegistration = userInterface.registerSuiteTab(EXTENSION_TAB, loggerPanel);
+        }
+        Runnable loggerAction = () -> {
+            boolean nowOn = !isTabVisible();
+            extensionConfiguration.setWebSocketsLogger(nowOn);
+
+            if (nowOn) {
+                if (!isTabVisible()) {
+                    wsTabRegistration = userInterface.registerSuiteTab(
+                            EXTENSION_TAB, loggerPanel
+                    );
+                }
+            } else {
+                if (isTabVisible()) {
+                    wsTabRegistration.deregister();
+                }
+            }
+        };
+        userInterface.menuBar().registerMenu(generateMenu(logger, extensionConfiguration, loggerAction, frames::close));
 
         userInterface.registerContextMenuItemsProvider(
                 new WebSocketContextMenuItemsProvider(
@@ -76,7 +90,11 @@ public class WebSocketFuzzer implements BurpExtension {
 
         String extensionVersion = WebSocketFuzzer.class.getPackage().getImplementationVersion();
         logger.logOutput(LoggerLevel.DEFAULT, EXTENSION_NAME + " v" + extensionVersion);
-        logger.logOutput(LoggerLevel.DEFAULT, GREETINGS);
+        logger.logOutput(LoggerLevel.DEFAULT, Utilities.GREETINGS);
+    }
+
+    private boolean isTabVisible() {
+        return wsTabRegistration != null && wsTabRegistration.isRegistered();
     }
 
     @Override

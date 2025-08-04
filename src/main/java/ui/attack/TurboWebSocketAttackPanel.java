@@ -5,6 +5,7 @@ import attack.AttackStatus;
 import burp.api.montoya.ui.UserInterface;
 import burp.api.montoya.ui.editor.WebSocketMessageEditor;
 import data.ConnectionMessage;
+import logger.Logger;
 import ui.PanelSwitcher;
 import ui.attack.table.TurboWebSocketMessageTable;
 import ui.attack.table.WebSocketMessageTableModel;
@@ -12,6 +13,7 @@ import utils.IconFactory;
 import utils.Pair;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.text.DefaultCaret;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -23,8 +25,10 @@ import static burp.api.montoya.ui.editor.EditorOptions.READ_ONLY;
 import static data.Progress.PROGRESS_BAR_STRING;
 import static javax.swing.JSplitPane.HORIZONTAL_SPLIT;
 import static javax.swing.JSplitPane.VERTICAL_SPLIT;
+import static utils.Utilities.createLabeledComponent;
 
 public class TurboWebSocketAttackPanel extends JPanel {
+    private final Logger logger;
     private final UserInterface userInterface;
     private final AttackManager attackManager;
     private final AttackStatus attackStatus;
@@ -33,6 +37,7 @@ public class TurboWebSocketAttackPanel extends JPanel {
     private final IconFactory iconFactory;
 
     public TurboWebSocketAttackPanel(
+            Logger logger,
             UserInterface userInterface,
             AttackManager attackManager,
             AttackStatus attackStatus,
@@ -40,7 +45,7 @@ public class TurboWebSocketAttackPanel extends JPanel {
             WebSocketMessageTableModel tableModel
     ) {
         super(new BorderLayout());
-
+        this.logger = logger;
         this.userInterface = userInterface;
         this.attackManager = attackManager;
         this.attackStatus = attackStatus;
@@ -51,26 +56,11 @@ public class TurboWebSocketAttackPanel extends JPanel {
         initComponents();
     }
 
-    private static JPanel createLabeledComponent(String labelText, Component component) {
-        JPanel panel = new JPanel(new BorderLayout());
-
-        // Create the label
-        JLabel label = new JLabel(labelText);
-        label.setHorizontalAlignment(SwingConstants.CENTER); // Center align the label
-        panel.add(label, BorderLayout.NORTH);
-
-        // Add the original component below the label
-        panel.add(component, BorderLayout.CENTER);
-
-        return panel;
-    }
-
     private static JButton getClearButton(JTextArea textArea) {
         JButton clearButton = new JButton("Clear");
         clearButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Clear the JTextArea
                 textArea.setText("");
             }
         });
@@ -102,24 +92,51 @@ public class TurboWebSocketAttackPanel extends JPanel {
         );
         attackPanelSplitPane.setResizeWeight(0.5);
 
-//        this.add(attackPanelSplitPane, CENTER);
-        JSplitPane controlSplitPanel = new JSplitPane(
-                VERTICAL_SPLIT,
-                getLoggerComponent(),
-                getHaltConfigureButton()
-        );
-        // Make the bottom component (button) non-resizable
-        controlSplitPanel.setResizeWeight(1.0); // 1.0 means all extra space goes to the top component
-        controlSplitPanel.setDividerSize(0); // No visible divider for aesthetics
+        Component haltButton = getHaltConfigureButton();
 
-        JSplitPane attackPanel = new JSplitPane(
-                VERTICAL_SPLIT,
-                attackPanelSplitPane,
-                controlSplitPanel
-        );
-        attackPanel.setResizeWeight(0.9);
-        this.add(attackPanel);
-//        this.add(controlSplitPanel, SOUTH);
+        if (logger.isDebugLogLevel()) {
+            JSplitPane controlSplitPanel = new JSplitPane(
+                    VERTICAL_SPLIT,
+                    getLoggerComponent(),
+                    haltButton
+            );
+
+            controlSplitPanel.setResizeWeight(1.0);
+            controlSplitPanel.setDividerSize(0);
+            JSplitPane attackPanel = new JSplitPane(
+                    VERTICAL_SPLIT,
+                    attackPanelSplitPane,
+                    controlSplitPanel
+            );
+            attackPanel.setResizeWeight(0.9);
+            this.add(attackPanel);
+        } else {
+            this.add(attackPanelSplitPane, BorderLayout.CENTER);
+            JPanel attackPanel = getControlComponent();
+            attackPanel.add(haltButton, BorderLayout.SOUTH);
+            this.add(attackPanel, BorderLayout.SOUTH);
+        }
+
+    }
+
+    private JPanel getControlComponent() {
+        JPanel topPanel = new JPanel(new BorderLayout());
+        JLabel outputLabel = new JLabel("Output");
+        Border border = BorderFactory.createEmptyBorder(5, 5, 5, 5);
+        outputLabel.setBorder(border);
+        outputLabel.setFont(outputLabel.getFont().deriveFont(Font.BOLD));
+
+        JLabel logLabel = new JLabel(PROGRESS_BAR_STRING);
+        logLabel.setBorder(border);
+        logLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        Consumer<String> progressConsumer = message -> SwingUtilities.invokeLater(() -> {
+            logLabel.setText(message);
+        });
+        attackManager.registerProgressListener(progressConsumer);
+
+        topPanel.add(outputLabel, BorderLayout.WEST);
+        topPanel.add(logLabel, BorderLayout.CENTER);
+        return topPanel;
     }
 
     private Component getLoggerComponent() {
@@ -136,36 +153,18 @@ public class TurboWebSocketAttackPanel extends JPanel {
         DefaultCaret caret = (DefaultCaret) textArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 
-        // Create Output Label (Bold Text)
-        JLabel outputLabel = new JLabel("Output");
-        outputLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
-        outputLabel.setFont(outputLabel.getFont().deriveFont(Font.BOLD));
-
-        //
-        JLabel logLabel = new JLabel(PROGRESS_BAR_STRING);
-        logLabel.setHorizontalAlignment(SwingConstants.LEFT);
-        Consumer<String> progressConsumer = message -> SwingUtilities.invokeLater(() -> {
-            logLabel.setText(message);
-        });
-
-
         JButton clearButton = getClearButton(textArea);
 
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        topPanel.add(outputLabel, BorderLayout.WEST);
-        topPanel.add(logLabel, BorderLayout.CENTER);
+        JPanel topPanel = getControlComponent();
         topPanel.add(clearButton, BorderLayout.EAST);
 
         // Add a scroll pane to the text area
         JScrollPane scrollPane = new JScrollPane(textArea);
 
-        Consumer<String> messagesConsumer = message -> SwingUtilities.invokeLater(() -> {
-            textArea.append(message + "\n");
-        });
+        Consumer<String> messagesConsumer =
+                message -> SwingUtilities.invokeLater(() -> textArea.append(message + "\n"));
 
-        attackManager.registerListener(messagesConsumer);
-        attackManager.registerProgressListener(progressConsumer);
+        logger.registerFuzzerLogger(messagesConsumer);
 
         panel.add(topPanel, BorderLayout.NORTH);
         panel.add(scrollPane, BorderLayout.CENTER);

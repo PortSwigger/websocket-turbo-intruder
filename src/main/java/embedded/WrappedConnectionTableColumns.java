@@ -20,8 +20,7 @@ public enum WrappedConnectionTableColumns {
     }
 
     static int[] columnWidthPercentages() {
-        int[] result = stream(values()).mapToInt(c -> c.widthPercentage).toArray();
-        return result;
+        return stream(values()).mapToInt(c -> c.widthPercentage).toArray();
     }
 
     static String headerWithIndex(int index) {

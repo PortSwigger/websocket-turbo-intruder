@@ -1,7 +1,7 @@
 package ui.editor;
 
 import attack.AttackStarter;
-import config.FileLocationConfiguration;
+import config.ExtensionConfiguration;
 import data.AttackDetails;
 import script.MemoryScript;
 import script.Script;
@@ -15,13 +15,13 @@ import java.util.List;
 public class WebSocketEditorController {
     private final AttackStarter attackStarter;
     private final PanelSwitcher panelSwitcher;
-    private final FileLocationConfiguration fileLocationConfiguration;
+    private final ExtensionConfiguration extensionConfiguration;
     private final ScriptLoaderFacade scriptLoader;
 
-    public WebSocketEditorController(AttackStarter attackStarter, PanelSwitcher panelSwitcher, FileLocationConfiguration fileLocationConfiguration, ScriptLoaderFacade scriptLoader) {
+    public WebSocketEditorController(AttackStarter attackStarter, PanelSwitcher panelSwitcher, ExtensionConfiguration extensionConfiguration, ScriptLoaderFacade scriptLoader) {
         this.attackStarter = attackStarter;
         this.panelSwitcher = panelSwitcher;
-        this.fileLocationConfiguration = fileLocationConfiguration;
+        this.extensionConfiguration = extensionConfiguration;
         this.scriptLoader = scriptLoader;
     }
 
@@ -32,20 +32,20 @@ public class WebSocketEditorController {
     }
 
     public Script[] loadScripts(File file) {
-        fileLocationConfiguration.setWebSocketScriptPath(file.getAbsolutePath());
+        extensionConfiguration.setWebSocketScriptPath(file.getAbsolutePath());
 
         return loadScripts();
     }
 
     public Script[] loadScripts() {
         List<Script> scriptList = new ArrayList<>(scriptLoader.loadScripts());
-        String script = fileLocationConfiguration.getWebSocketScript();
+        String script = extensionConfiguration.getWebSocketScript();
         if (script != null) scriptList.addFirst(new MemoryScript(script));
         return scriptList.toArray(new Script[0]);
     }
 
     public void saveScript(String script) {
-        fileLocationConfiguration.setWebSocketScript(script);
+        extensionConfiguration.setWebSocketScript(script);
     }
 
 }

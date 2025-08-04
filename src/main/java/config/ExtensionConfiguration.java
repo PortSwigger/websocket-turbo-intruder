@@ -6,14 +6,17 @@ import logger.LoggerLevel;
 
 import java.util.Objects;
 
-public class FileLocationConfiguration {
+public class ExtensionConfiguration {
     private static final String DEFAULT_SCRIPT_DIRECTORY = "/examples/";
     private static final String PREFERENCE_KEY_WEBSOCKET_SCRIPT = "websocketsScript";
+    private static final String PREFERENCE_KEY_EMBEDDED_SERVER_SCRIPT = "embeddedServerScript";
     private static final String PREFERENCE_KEY_WEBSOCKET_SCRIPTS_PATH = "websocketsScriptsPath";
+    private static final String PREFERENCE_KEY_WEBSOCKET_LOGGER = "websocketsLogger";
+
     private final Logger logger;
     private final Preferences preferences;
 
-    public FileLocationConfiguration(Logger logger, Preferences preferences) {
+    public ExtensionConfiguration(Logger logger, Preferences preferences) {
         this.logger = logger;
         this.preferences = preferences;
 
@@ -42,6 +45,23 @@ public class FileLocationConfiguration {
     public void setWebSocketScript(String script) {
         preferences.setString(PREFERENCE_KEY_WEBSOCKET_SCRIPT, script);
         logger.logOutput(LoggerLevel.DEBUG, "Script saved to the preferences.");
+    }
+
+    public Boolean getWebSocketsLogger() {
+        return preferences.getBoolean(PREFERENCE_KEY_WEBSOCKET_LOGGER);
+    }
+
+    public void setWebSocketsLogger(boolean enabled) {
+        preferences.setBoolean(PREFERENCE_KEY_WEBSOCKET_LOGGER, enabled);
+    }
+
+    public String getEmbeddedServerScript() {
+        return preferences.getString(PREFERENCE_KEY_EMBEDDED_SERVER_SCRIPT);
+    }
+
+    public void setEmbeddedServerScript(String script) {
+        preferences.setString(PREFERENCE_KEY_EMBEDDED_SERVER_SCRIPT, script);
+        logger.logOutput(LoggerLevel.DEBUG, "Embedded Server Script saved to the preferences.");
     }
 
     public void setWebSocketScriptPath() {
