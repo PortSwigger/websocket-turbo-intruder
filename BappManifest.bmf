@@ -1,0 +1,13 @@
+Uuid: ba292c5982ea426c95c9d7325d9a1066
+ExtensionType: 1
+Name: WebSocket Turbo Intruder
+RepoName: websocket-turbo-intruder
+ScreenVersion: 2.0.0
+SerialVersion: 5
+MinPlatformVersion: 22
+ProOnly: False
+Author: Zakhar Fedotkin, PortSwigger, Hannah L, PortSwigger
+ShortDescription: Fuzz WebSockets messages with custom Python code and use a middleware proxy for interacting with WebSocket connections via HTTP.
+EntryPoint: WebSocketFuzzer-2.0.0.jar
+BuildCommand: ./gradlew jar
+SupportedProducts: Pro, Community

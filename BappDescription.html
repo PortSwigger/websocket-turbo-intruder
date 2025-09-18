@@ -1,0 +1,30 @@
+<p>This extension enables advanced fuzzing of WebSocket messages using custom Python code. It provides two integrated tools for either launching scripted attacks or creating a middleware proxy for interacting with WebSocket connections via HTTP.</p>
+
+<h2>Features</h2>
+<ul>
+	  <li>Fuzz WebSocket messages using customizable Python scripts</li>
+	    <li>Send custom WebSocket payloads with dynamic content replacement</li>
+	      <li>Supports different WebSocket engines: Burp, Turbo, and Threaded</li>
+	        <li>Optional HTTP middleware to route requests through WebSocket</li>
+		  <li>Manual or programmatic control over connection configuration and message dispatch</li>
+		    <li>Message logging with timestamp, direction, length, and comment support</li>
+</ul>
+
+<h2>Usage</h2>
+
+<h3>Intruder Tool</h3>
+<ol>
+	  <li>Right-click a WebSocket message and navigate to <code class="InlineCode">Extensions &rarr; WebSocket Turbo Intruder &rarr; Send to WebSocket Turbo Intruder</code>.</li>
+	    <li>If part of the message is highlighted before sending, it will be replaced with <code class="InlineCode">%s</code> in the payload.</li>
+	      <li>Select a template from the drop-down list.</li>
+	        <li>Edit the Python code to suit your testing logic.</li>
+		  <li>Start the attack to initiate a new WebSocket connection and send payloads.</li>
+</ol>
+
+<h3>Middleware Tool</h3>
+<ol>
+	  <li>Right-click a WebSocket message and navigate to <code class="InlineCode">Extensions &rarr; WebSocket Turbo Intruder &rarr; Send to WebSocket HTTP Middleware</code>.</li>
+	    <li>Click the <strong>Start</strong> button to launch the internal HTTP server.</li>
+	      <li>Each WebSocket connection creates an HTTP POST endpoint that forwards requests to the server.</li>
+	        <li>Select the desired HTTP server from the table, then use Burp tools to send HTTP requests to it.</li>
+</ol>
